@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Plataforma Incentivados — Gestão de Projetos Culturais</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+:root{--bg:#fff;--bg2:#f7f7f5;--bg3:#f0eeea;--text:#1a1a1a;--text2:#666;--text3:#999;--border:rgba(0,0,0,.12);--border2:rgba(0,0,0,.22);--purple:#5340c7;--pbg:#EEEDFE;--ptxt:#3C3489;--teal:#1D9E75;--tbg:#E1F5EE;--ttxt:#085041;--amber:#EF9F27;--abg:#FAEEDA;--atxt:#633806;--red:#E24B4A;--rbg:#FCEBEB;--rtxt:#A32D2D;--bluebg:#E6F1FB;--bluetxt:#185FA5;--r:8px;--rl:12px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;color:var(--text);background:var(--bg3)}
+.app{display:flex;height:100vh;overflow:hidden}
+.sb{width:210px;min-width:210px;background:var(--bg2);border-right:.5px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.content{flex:1;overflow-y:auto;padding:20px}
+.sb-logo{padding:14px 16px;border-bottom:.5px solid var(--border)}
+.sb-logo .brand{font-size:14px;font-weight:600}
+.sb-logo .sub{font-size:10px;color:var(--text2);margin-top:2px}
+.nl{font-size:10px;font-weight:600;color:var(--text3);padding:8px 16px 2px;text-transform:uppercase;letter-spacing:.05em}
+.ni{display:flex;align-items:center;gap:8px;padding:7px 16px;cursor:pointer;font-size:12px;color:var(--text2);border-left:2px solid transparent;white-space:nowrap}
+.ni:hover{background:var(--bg);color:var(--text)}
+.ni.active{background:var(--bg);color:var(--text);border-left-color:var(--purple);font-weight:500}
+.ni i{font-size:15px;flex-shrink:0}
+.nb{background:var(--purple);color:#fff;font-size:10px;padding:1px 5px;border-radius:8px;margin-left:auto}
+.sb-user{margin-top:auto;padding:10px 16px;border-top:.5px solid var(--border);display:flex;align-items:center;gap:8px}
+.av{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0}
+.av-p{background:var(--pbg);color:var(--ptxt)}
+.topbar{padding:9px 20px;border-bottom:.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--bg);flex-shrink:0}
+.topbar-title{font-size:14px;font-weight:500}
+.btn{padding:6px 12px;font-size:12px;border:.5px solid var(--border2);border-radius:var(--r);cursor:pointer;background:var(--bg);color:var(--text);font-family:inherit;transition:background .1s}
+.btn:hover{background:var(--bg2)}
+.btn-p{background:var(--purple);border-color:var(--purple);color:#fff}
+.btn-p:hover{background:#4330b0}
+.btn-ok{background:var(--teal);border-color:var(--teal);color:#fff}
+.btn-ok:hover{background:#167a5b}
+.btn-no{background:var(--red);border-color:var(--red);color:#fff}
+.btn-no:hover{background:#b83b3b}
+.btn-sm{padding:4px 9px;font-size:11px}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.mc{background:var(--bg2);border-radius:var(--r);padding:12px 14px;border:.5px solid var(--border)}
+.mc-lbl{font-size:11px;color:var(--text2);margin-bottom:4px}
+.mc-val{font-size:20px;font-weight:600}
+.mc-sub{font-size:10px;color:var(--text2);margin-top:3px}
+.up{color:var(--teal)}.down{color:var(--red)}
+.sec{background:var(--bg);border:.5px solid var(--border);border-radius:var(--rl);margin-bottom:14px;overflow:hidden}
+.sec-h{padding:10px 14px;border-bottom:.5px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.sec-t{font-size:13px;font-weight:500}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{padding:7px 12px;text-align:left;color:var(--text2);font-weight:500;border-bottom:.5px solid var(--border);background:var(--bg2);white-space:nowrap}
+td{padding:8px 12px;border-bottom:.5px solid var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg2)}
+.st{display:inline-flex;align-items:center;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:500}
+.sg{background:var(--tbg);color:var(--ttxt)}
+.sa{background:var(--abg);color:var(--atxt)}
+.sr{background:var(--rbg);color:var(--rtxt)}
+.sb2{background:var(--bluebg);color:var(--bluetxt)}
+.sl{background:#F1EFE8;color:#5F5E5A}
+.sp{background:var(--pbg);color:var(--ptxt)}
+.tag{display:inline-block;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:500;background:var(--pbg);color:var(--ptxt)}
+.pb{height:5px;background:var(--bg3);border-radius:3px;overflow:hidden;display:inline-block}
+.pf{height:100%;border-radius:3px;background:var(--purple)}
+.fg label{display:block;font-size:11px;color:var(--text2);margin-bottom:3px;font-weight:500}
+.fg input,.fg select,.fg textarea{width:100%;padding:6px 9px;border:.5px solid var(--border2);border-radius:var(--r);font-size:12px;background:var(--bg);color:var(--text);font-family:inherit}
+.fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:var(--purple)}
+.gr{display:grid;gap:10px}
+.c2{grid-template-columns:1fr 1fr}
+.c3{grid-template-columns:1fr 1fr 1fr}
+.c4{grid-template-columns:repeat(4,1fr)}
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:1000}
+.modal{background:var(--bg);border-radius:var(--rl);width:600px;max-height:88vh;overflow-y:auto;border:.5px solid var(--border2)}
+.mh{padding:12px 16px;border-bottom:.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--bg);z-index:1}
+.mh h3{font-size:14px;font-weight:500}
+.mb{padding:18px}
+.mf{padding:10px 16px;border-top:.5px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+.page{display:none}
+.page.active{display:block}
+.alert{padding:9px 13px;border-radius:var(--r);font-size:12px;margin-bottom:12px;display:flex;align-items:flex-start;gap:8px}
+.al-i{background:var(--bluebg);color:var(--bluetxt);border:.5px solid #B5D4F4}
+.al-s{background:var(--tbg);color:var(--ttxt);border:.5px solid #9FE1CB}
+.al-w{background:var(--abg);color:var(--atxt);border:.5px solid #FAC775}
+.al-e{background:var(--rbg);color:var(--rtxt);border:.5px solid #F7C1C1}
+.chip{display:inline-block;padding:4px 11px;border-radius:10px;font-size:11px;border:.5px solid var(--border2);color:var(--text2);cursor:pointer;margin-right:4px}
+.chip.active,.chip:hover{background:var(--bg2);color:var(--text)}
+.chat-wrap{display:flex;flex-direction:column;height:420px}
+.chat-msgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px}
+.msg{max-width:82%;padding:9px 13px;border-radius:14px;font-size:12px;line-height:1.55}
+.mu{align-self:flex-end;background:var(--purple);color:#fff;border-bottom-right-radius:3px}
+.ma{align-self:flex-start;background:var(--bg2);border:.5px solid var(--border);border-bottom-left-radius:3px}
+.ci{padding:10px 14px;border-top:.5px solid var(--border);display:flex;gap:8px}
+.ci input{flex:1}
+.tax-box{background:var(--pbg);border-radius:var(--r);padding:11px 13px;margin-top:10px}
+.tr{display:flex;justify-content:space-between;font-size:12px;padding:2px 0}
+.tr.tot{font-weight:600;border-top:.5px solid #AFA9EC;padding-top:6px;margin-top:4px}
+.sem{display:grid;gap:6px;margin-top:12px}
+.sem-row{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:var(--r);border:.5px solid var(--border);font-size:12px}
+.sem-g{background:#EAF3DE;border-color:#C0DD97}
+.sem-a{background:#FAEEDA;border-color:#FAC775}
+.sem-r{background:#FCEBEB;border-color:#F7C1C1}
+.dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.dg{background:var(--teal)}.da{background:var(--amber)}.dr{background:var(--red)}
+.ap-card{border:.5px solid var(--border);border-radius:var(--rl);padding:14px;margin-bottom:10px;background:var(--bg)}
+.rub-bar{margin-bottom:10px}
+.rub-bar .lbl{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px}
+.law-item{padding:10px 14px;border-bottom:.5px solid var(--border);cursor:pointer}
+.law-item:hover{background:var(--bg2)}
+.law-item:last-child{border-bottom:none}
+.doc-item{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:.5px solid var(--border);font-size:12px}
+.doc-item:last-child{border-bottom:none}
+.doc-item:hover{background:var(--bg2)}
+#toast{position:fixed;bottom:18px;right:18px;background:var(--teal);color:#fff;padding:9px 16px;border-radius:var(--r);font-size:12px;font-weight:500;z-index:9999;display:none}
+.empty{text-align:center;padding:40px;color:var(--text2);font-size:13px}
+.empty i{font-size:36px;display:block;margin-bottom:8px;opacity:.3}
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg3)}
+.lc{background:var(--bg);border:.5px solid var(--border);border-radius:var(--rl);padding:36px;width:380px}
+.lc-logo{text-align:center;margin-bottom:24px}
+.lc-logo h1{font-size:22px;font-weight:700;color:var(--purple)}
+.lc-logo p{font-size:12px;color:var(--text2);margin-top:3px}
+code{font-family:monospace;font-size:10px;background:var(--bg3);padding:1px 4px;border-radius:3px}
+.badge-cert{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:500}
+.bc-ok{background:var(--tbg);color:var(--ttxt)}
+.bc-exp{background:var(--rbg);color:var(--rtxt)}
+.bc-na{background:#F1EFE8;color:#5F5E5A}
+</style>
+</head>
+<body>
+<div class="login-wrap" id="login-screen">
+  <div class="lc">
+    <div class="lc-logo"><h1>🎭 Incentivados</h1><p>Plataforma de Gestão de Projetos Culturais</p></div>
+    <div class="fg" style="margin-bottom:10px"><label>E-mail</label><input type="email" id="le" value="vanessa@criape.com.br"></div>
+    <div class="fg" style="margin-bottom:18px"><label>Senha</label><input type="password" id="lp" value="••••••••"></div>
+    <button class="btn btn-p" style="width:100%;padding:9px" onclick="doLogin()">Entrar na plataforma</button>
+    <div style="text-align:center;margin-top:12px;font-size:11px;color:var(--text2)">Demo: qualquer e-mail/senha funciona</div>
+  </div>
+</div>
+<div class="app" id="app-screen" style="display:none">
+<div class="sb">
+  <div class="sb-logo"><div class="brand">🎭 Incentivados</div><div class="sub">Gestão Cultural · CRIAPE</div></div>
+  <div style="padding:6px 0">
+    <div class="ni active" data-page="dashboard"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
+    <div class="nl">Projetos</div>
+    <div class="ni" data-page="projects"><i class="ti ti-folders"></i>Projetos</div>
+    <div class="ni" data-page="rubricas"><i class="ti ti-chart-bar"></i>Rubricas</div>
+    <div class="nl">Financeiro</div>
+    <div class="ni" data-page="payments"><i class="ti ti-receipt"></i>Pagamentos</div>
+    <div class="ni" data-page="approvals"><i class="ti ti-checks"></i>Aprovações <span class="nb" id="nb-ap">3</span></div>
+    <div class="ni" data-page="nf"><i class="ti ti-file-invoice"></i>Notas Fiscais</div>
+    <div class="ni" data-page="omie"><i class="ti ti-arrows-exchange"></i>Omie / Conciliação</div>
+    <div class="nl">Cadastros</div>
+    <div class="ni" data-page="vendors"><i class="ti ti-building-store"></i>Fornecedores</div>
+    <div class="ni" data-page="contracts"><i class="ti ti-file-text"></i>Contratos</div>
+    <div class="nl">Ferramentas</div>
+    <div class="ni" data-page="ai"><i class="ti ti-robot"></i>Assistente IA</div>
+    <div class="ni" data-page="laws"><i class="ti ti-scale"></i>Legislação</div>
+    <div class="ni" data-page="docs"><i class="ti ti-folder"></i>Documentos</div>
+    <div class="ni" data-page="accountability"><i class="ti ti-clipboard-check"></i>Prestação</div>
+    <div class="ni" data-page="reports"><i class="ti ti-chart-pie"></i>Relatórios</div>
+    <div class="ni" data-page="audit"><i class="ti ti-shield-check"></i>Auditoria</div>
+    <div class="ni" data-page="admin"><i class="ti ti-settings"></i>Admin</div>
+  </div>
+  <div class="sb-user">
+    <div class="av av-p" id="u-av">VP</div>
+    <div><div style="font-size:12px;font-weight:500" id="u-nm">Vanessa Pires</div><div style="font-size:10px;color:var(--text2)">org_manager</div></div>
+  </div>
+</div>
+<div class="main">
+<div class="topbar">
+  <div class="topbar-title" id="pg-title">Dashboard</div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <button class="btn btn-sm btn-p" id="new-btn" style="display:none" onclick="openNew()"><i class="ti ti-plus"></i> Novo</button>
+    <span style="font-size:11px;color:var(--text2)"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--teal);margin-right:4px"></span>Online</span>
+  </div>
+</div>
+<div class="content">
+<!-- DASHBOARD -->
+<div class="page active" id="page-dashboard">
+<div class="metrics">
+  <div class="mc"><div class="mc-lbl">Projetos ativos</div><div class="mc-val" id="d-proj">12</div><div class="mc-sub up">↑ 2 este mês</div></div>
+  <div class="mc"><div class="mc-lbl">Total captado</div><div class="mc-val" style="font-size:17px">R$ 4,2M</div><div class="mc-sub">11 leis distintas</div></div>
+  <div class="mc"><div class="mc-lbl">Pagamentos pendentes</div><div class="mc-val" id="d-pend">3</div><div class="mc-sub down">Aguardando aprovação</div></div>
+  <div class="mc"><div class="mc-lbl">Alertas ativos</div><div class="mc-val down">7</div><div class="mc-sub down">2 críticos</div></div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+  <div class="sec">
+    <div class="sec-h"><span class="sec-t">Projetos recentes</span><button class="btn btn-sm" onclick="navigate('projects')">Ver todos</button></div>
+    <table><thead><tr><th>Projeto</th><th>Lei</th><th>Status</th><th>Exec.</th></tr></thead><tbody id="d-projs"></tbody></table>
+  </div>
+  <div class="sec">
+    <div class="sec-h"><span class="sec-t">Alertas do sistema</span></div>
+    <div id="d-alerts" style="padding:10px"></div>
+  </div>
+</div>
+<div class="sec" style="margin-top:14px">
+  <div class="sec-h"><span class="sec-t">Execução orçamentária por rubrica</span></div>
+  <div style="padding:14px" id="d-rub"></div>
+</div>
+</div>
+
+<!-- PROJECTS -->
+<div class="page" id="page-projects">
+<div class="sec">
+  <div class="sec-h"><span class="sec-t">Projetos (<span id="p-cnt">0</span>)</span>
+    <div style="display:flex;gap:6px">
+      <select id="p-law-filter" class="btn btn-sm" onchange="renderProjects()" style="padding:4px 8px;font-size:11px">
+        <option value="">Todas as leis</option>
+        <option>Lei Rouanet</option><option>Lei do Audiovisual</option><option>ProAC-SP</option>
+        <option>Lei Paulo Gustavo</option><option>Aldir Blanc 2</option><option>FSA</option>
+        <option>BNDES Cultural</option><option>Lei do Esporte</option>
+      </select>
+      <button class="btn btn-sm btn-p" onclick="openModal('project')"><i class="ti ti-plus"></i> Novo projeto</button>
+    </div>
+  </div>
+  <table><thead><tr><th>Nome do projeto</th><th>PRONAC/Nº</th><th>Lei</th><th>Valor aprovado</th><th>Captado</th><th>Status</th><th>Execução</th><th></th></tr></thead>
+  <tbody id="projects-tbody"></tbody></table>
+</div>
+</div>
+
+<!-- RUBRICAS -->
+<div class="page" id="page-rubricas">
+<div class="alert al-i"><i class="ti ti-info-circle"></i> Selecione um projeto para ver o comparativo orçamento aprovado × executado em tempo real.</div>
+<div class="sec-h" style="margin-bottom:12px;padding:0">
+  <select id="rub-proj" class="btn" style="font-size:12px;padding:6px 10px" onchange="renderRubricas()">
+    <option value="">— Selecione o projeto —</option>
+  </select>
+</div>
+<div id="rub-content"></div>
+</div>
+
+<!-- PAYMENTS -->
+<div class="page" id="page-payments">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+  <div>
+    <span class="chip active" onclick="fpay(this,'all')">Todos</span>
+    <span class="chip" onclick="fpay(this,'pending')">Pendentes</span>
+    <span class="chip" onclick="fpay(this,'approved')">Aprovados</span>
+    <span class="chip" onclick="fpay(this,'paid')">Pagos</span>
+    <span class="chip" onclick="fpay(this,'rejected')">Rejeitados</span>
+  </div>
+  <button class="btn btn-sm btn-p" onclick="openModal('payment')"><i class="ti ti-plus"></i> Nova solicitação</button>
+</div>
+<div class="sec"><table><thead><tr><th>Fornecedor</th><th>Projeto</th><th>Rubrica</th><th>Bruto</th><th>Retenção</th><th>Líquido</th><th>Status</th><th></th></tr></thead>
+<tbody id="pay-tbody"></tbody></table></div>
+</div>
+
+<!-- APPROVALS -->
+<div class="page" id="page-approvals">
+<div class="alert al-i"><i class="ti ti-info-circle"></i> <span id="ap-msg">3 solicitações aguardando aprovação — nível 1 (Coordenador Financeiro)</span></div>
+<div id="ap-list"></div>
+</div>
+
+<!-- NOTAS FISCAIS -->
+<div class="page" id="page-nf">
+<div class="sec">
+  <div class="sec-h"><span class="sec-t">Notas Fiscais</span>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-sm" onclick="showToast('Upload de XML NF-e em processamento...')"><i class="ti ti-upload"></i> Importar XML</button>
+      <button class="btn btn-sm btn-p" onclick="showToast('Vinculando NF à solicitação...')"><i class="ti ti-link"></i> Vincular</button>
+    </div>
+  </div>
+  <table><thead><tr><th>Número</th><th>Emitente</th><th>Valor</th><th>Data</th><th>Solicitação vinculada</th><th>Validação SEFAZ</th><th>Status</th><th></th></tr></thead>
+  <tbody id="nf-tbody"></tbody></table>
+</div>
+<div class="sec">
+  <div class="sec-h"><span class="sec-t">Guias de recolhimento</span><button class="btn btn-sm btn-p" onclick="showToast('Gerando DARF...')"><i class="ti ti-plus"></i> Gerar DARF/GPS</button></div>
+  <table><thead><tr><th>Tipo</th><th>Competência</th><th>Valor</th><th>Vencimento</th><th>NF vinculada</th><th>Status</th><th></th></tr></thead>
+  <tbody id="guias-tbody"></tbody></table>
+</div>
+</div>
+
+<!-- OMIE CONCILIAÇÃO -->
+<div class="page" id="page-omie">
+<div class="metrics">
+  <div class="mc"><div class="mc-lbl">Lançamentos importados</div><div class="mc-val">142</div><div class="mc-sub">Última sync: hoje 08:30</div></div>
+  <div class="mc"><div class="mc-lbl">Conciliados</div><div class="mc-val up">128</div><div class="mc-sub up">90% do total</div></div>
+  <div class="mc"><div class="mc-lbl">Pendentes conciliação</div><div class="mc-val down">14</div><div class="mc-sub down">Requer ação</div></div>
+  <div class="mc"><div class="mc-lbl">Alertas Omie</div><div class="mc-val down">3</div><div class="mc-sub down">Lançamentos sem NF</div></div>
+</div>
+<div class="sec">
+  <div class="sec-h"><span class="sec-t">Conciliação bancária — conta do projeto</span>
+    <button class="btn btn-sm" onclick="showToast('Sincronizando com Omie...')"><i class="ti ti-refresh"></i> Sincronizar Omie</button>
+  </div>
+  <table><thead><tr><th>Data</th><th>Descrição (Omie)</th><th>Valor</th><th>Conta</th><th>Solicitação na plataforma</th><th>Status</th><th></th></tr></thead>
+  <tbody id="omie-tbody"></tbody></table>
+</div>
+</div>
+
+<!-- VENDORS -->
+<div class="page" id="page-vendors">
+<div class="sec">
+  <div class="sec-h"><span class="sec-t">Fornecedores (<span id="v-cnt">0</span>)</span>
+    <button class="btn btn-sm btn-p" onclick="openModal('vendor')"><i class="ti ti-plus"></i> Novo fornecedor</button>
+  </div>
+  <table><thead><tr><th>Nome / Razão social</th><th>Tipo</th><th>CNPJ/CPF</th><th>CNAE principal</th><th>Regime</th><th>Certidões</th><th>Status RFB</th><th></th></tr></thead>
+  <tbody id="vend-tbody"></tbody></table>
+</div>
+</div>
+
+<!-- CONTRACTS -->
+<div class="page" id="page-contracts">
+<div class="sec">
+  <div class="sec-h"><span class="sec-t">Contratos (Clicksign)</span>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-sm" onclick="openModal('contract-template')"><i class="ti ti-template"></i> Templates</button>
+      <button class="btn btn-sm btn-p" onclick="showToast('Gerando contrato automaticamente...')"><i class="ti ti-send"></i> Enviar para assinatura</button>
+    </div>
+  </div>
+  <table><thead><tr><th>Documento</th><th>Tipo</th><th>Partes</th><th>Enviado em</th><th>Status</th><th></th></tr></thead>
+  <tbody id="cont-tbody"></tbody></table>
+</div>
+</div>
+
+<!-- AI ASSISTANT -->
+<div class="page" id="page-ai">
+<div style="display:grid;grid-template-columns:1fr 280px;gap:14px">
+  <div class="sec">
+    <div class="sec-h"><span class="sec-t"><i class="ti ti-robot"></i> Especialista em Leis de Incentivo Cultural</span></div>
+    <div class="chat-wrap">
+      <div class="chat-msgs" id="chat-msgs">
+        <div class="msg ma">Olá! Sou especialista em todas as leis de incentivo cultural e esportivo do Brasil — Lei Rouanet, Lei do Audiovisual, ProAC-SP, Lei Paulo Gustavo, Aldir Blanc, FSA, Lei do Esporte e outras. Posso responder dúvidas sobre rubricas, retenções fiscais, CNAE, prestação de contas, tetos de pagamento e prazos. Como posso ajudar?</div>
+      </div>
+      <div class="ci"><input type="text" id="chat-in" placeholder="Pergunta em linguagem natural..." onkeydown="if(event.key==='Enter')sendChat()">
+      <button class="btn btn-p btn-sm" onclick="sendChat()"><i class="ti ti-send"></i></button></div>
+    </div>
+  </div>
+  <div>
+    <div class="sec" style="margin-bottom:10px">
+      <div class="sec-h"><span class="sec-t" style="font-size:12px">Perguntas frequentes</span></div>
+      <div id="faq-list"></div>
+    </div>
+    <div class="sec">
+      <div class="sec-h"><span class="sec-t" style="font-size:12px">Leis na base</span></div>
+      <div id="laws-list-ai" style="padding:8px 12px;font-size:11px"></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- LEGISLAÇÃO -->
+<div class="page" id="page-laws">
+<div style="display:grid;grid-template-columns:280px 1fr;gap:14px">
+  <div class="sec" style="height:fit-content">
+    <div class="sec-h"><span class="sec-t">Base legislativa</span></div>
+    <div id="law-nav"></div>
+  </div>
+  <div id="law-detail">
+    <div class="alert al-i"><i class="ti ti-scale"></i> Selecione uma lei ao lado para ver regras, tetos, CNAEs permitidos e requisitos documentais.</div>
+  </div>
+</div>
+</div>
+
+<!-- DOCUMENTOS -->
+<div class="page" id="page-docs">
+<div class="sec">
+  <div class="sec-h"><span class="sec-t">Repositório documental</span>
+    <div style="display:flex;gap:6px">
+      <select class="btn btn-sm" id="doc-proj-filter" onchange="renderDocs()" style="font-size:11px">
+        <option value="">Todos os projetos</option>
+      </select>
+      <button class="btn btn-sm btn-p" onclick="showToast('Fazendo upload...')"><i class="ti ti-upload"></i> Upload</button>
+      <button class="btn btn-sm" onclick="showToast('Gerando ZIP...')"><i class="ti ti-download"></i> ZIP</button>
+    </div>
+  </div>
+  <div id="docs-list"></div>
+</div>
+</div>
+
+<!-- ACCOUNTABILITY -->
+<div class="page" id="page-accountability">
+<div class="sec">
+  <div class="sec-h"><span class="sec-t">Prestação de contas</span>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-sm" onclick="showToast('Exportando para SALIC...')"><i class="ti ti-download"></i> Exportar SALIC</button>
+      <button class="btn btn-sm" onclick="showToast('Exportando para SIMCAV...')"><i class="ti ti-download"></i> SIMCAV</button>
+    </div>
+  </div>
+  <table><thead><tr><th>Projeto</th><th>Lei</th><th>Prazo</th><th>Documentos</th><th>Guias pagas</th><th>Status</th><th></th></tr></thead>
+  <tbody id="acc-tbody"></tbody></table>
+</div>
+</div>
+
+<!-- REPORTS -->
+<div class="page" id="page-reports">
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px">
+  <div class="sec" style="cursor:pointer" onclick="showToast('Gerando DRE...')"><div style="padding:18px;text-align:center"><i class="ti ti-file-spreadsheet" style="font-size:32px;color:var(--purple);display:block;margin-bottom:8px"></i><div style="font-size:13px;font-weight:500">DRE por Projeto</div><div style="font-size:11px;color:var(--text2);margin:4px 0 10px">Por lei de incentivo</div><button class="btn btn-sm" style="width:100%">Gerar XLSX</button></div></div>
+  <div class="sec" style="cursor:pointer" onclick="showToast('Gerando relatório...')"><div style="padding:18px;text-align:center"><i class="ti ti-chart-pie" style="font-size:32px;color:var(--teal);display:block;margin-bottom:8px"></i><div style="font-size:13px;font-weight:500">Execução Orçamentária</div><div style="font-size:11px;color:var(--text2);margin:4px 0 10px">Por rubrica e categoria</div><button class="btn btn-sm" style="width:100%">Gerar PDF</button></div></div>
+  <div class="sec" style="cursor:pointer" onclick="showToast('Gerando relatório fiscal...')"><div style="padding:18px;text-align:center"><i class="ti ti-receipt-tax" style="font-size:32px;color:var(--amber);display:block;margin-bottom:8px"></i><div style="font-size:13px;font-weight:500">Retenções Fiscais</div><div style="font-size:11px;color:var(--text2);margin:4px 0 10px">IRRF, ISS, INSS, PIS/COFINS</div><button class="btn btn-sm" style="width:100%">Gerar XLSX</button></div></div>
+</div>
+<div class="sec">
+  <div class="sec-h"><span class="sec-t">Resumo de retenções — junho 2026</span></div>
+  <table><thead><tr><th>Tipo</th><th>Base de cálculo</th><th>Alíquota</th><th>Valor retido</th><th>Qtd. notas</th></tr></thead>
+  <tbody>
+    <tr><td>IRRF PF (cachê artístico)</td><td>R$ 128.500</td><td>7,5%–27,5%</td><td>R$ 18.240</td><td>12</td></tr>
+    <tr><td>IRRF PJ (serviços)</td><td>R$ 340.000</td><td>1,5%</td><td>R$ 5.100</td><td>8</td></tr>
+    <tr><td>ISS</td><td>R$ 340.000</td><td>5,0%</td><td>R$ 17.000</td><td>8</td></tr>
+    <tr><td>INSS (autônomo)</td><td>R$ 128.500</td><td>11% (cap R$ 908,86)</td><td>R$ 9.248</td><td>12</td></tr>
+    <tr><td>PIS/COFINS/CSLL</td><td>R$ 340.000</td><td>4,65%</td><td>R$ 15.810</td><td>8</td></tr>
+    <tr style="font-weight:600;background:var(--bg2)"><td>Total</td><td>R$ 468.500</td><td>—</td><td>R$ 65.398</td><td>20</td></tr>
+  </tbody></table>
+</div>
+</div>
+
+<!-- AUDIT -->
+<div class="page" id="page-audit">
+<div class="sec">
+  <div class="sec-h"><span class="sec-t">Log de auditoria imutável (SHA-256)</span><button class="btn btn-sm"><i class="ti ti-download"></i> Exportar</button></div>
+  <table><thead><tr><th>Data/hora</th><th>Usuário</th><th>Ação</th><th>Entidade</th><th>IP</th><th>Hash</th></tr></thead>
+  <tbody id="audit-tbody"></tbody></table>
+</div>
+</div>
+
+<!-- ADMIN -->
+<div class="page" id="page-admin">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+  <div class="sec">
+    <div class="sec-h"><span class="sec-t">Usuários</span><button class="btn btn-sm btn-p"><i class="ti ti-plus"></i> Convidar</button></div>
+    <table><thead><tr><th>Nome</th><th>Perfil</th><th>2FA</th><th>Status</th></tr></thead><tbody id="users-tbody"></tbody></table>
+  </div>
+  <div class="sec">
+    <div class="sec-h"><span class="sec-t">Organizações (multi-tenant)</span></div>
+    <table><thead><tr><th>Org</th><th>Schema</th><th>Projetos</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td><strong>CRIAPE</strong></td><td><code>org_criape</code></td><td>12</td><td><span class="st sg">Ativo</span></td></tr>
+      <tr><td>Brada Cultural</td><td><code>org_brada</code></td><td>5</td><td><span class="st sg">Ativo</span></td></tr>
+      <tr><td>Instituto Artes SP</td><td><code>org_artessp</code></td><td>3</td><td><span class="st sa">Trial</span></td></tr>
+    </tbody></table>
+    <div style="padding:12px;border-top:.5px solid var(--border)">
+      <div style="font-size:11px;font-weight:500;color:var(--text2);margin-bottom:8px">Configurações</div>
+      <div style="font-size:12px;display:flex;flex-direction:column;gap:7px">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" checked> 2FA obrigatório para aprovadores</label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" checked> Auditoria SHA-256 imutável</label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" checked> Alertas de certidões vencidas</label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" checked> Integração Omie (somente leitura)</label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox"> Whitelist de IPs por organização</label>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+</div></div></div>
+<!-- MODAL -->
+<div class="modal-ov" id="modal" style="display:none">
+  <div class="modal">
+    <div class="mh"><h3 id="modal-title">Novo</h3><button class="btn btn-sm" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+    <div class="mb" id="modal-body"></div>
+    <div class="mf" id="modal-footer">
+      <button class="btn btn-sm" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-sm btn-p" onclick="saveModal()">Salvar</button>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+<script>
+// ── DATA ──────────────────────────────────────────
+const LAWS = [
+  {id:'rouanet',name:'Lei Rouanet',num:'Lei 8.313/91',scope:'Federal',desc:'PRONAC — Programa Nacional de Apoio à Cultura. Mecenato, FNC e FICART.',rules:{teto_cache_pf:'Compatível com mercado (sem teto fixo — IN MinC 8/2017 Art. 35)',iss:'5% sobre PJ prestadores de serviço',irrf_pf:'Tabela progressiva 7,5%–27,5% (acima de R$ 1.903,99)',irrf_pj:'1,5% sobre serviços (exceto Simples)',inss_pf:'11% (cap R$ 908,86)',pis_cofins_csll:'4,65% sobre PJ não-Simples',admin_max:'15% do orçamento total',prazo_prestacao:'60 dias após encerramento',sistema_oficial:'SALIC (salic.cultura.gov.br)'},cnaes:['9001-9/01','9001-9/02','9001-9/03','9001-9/06','9002-7/01','9003-5/00','7420-0/01'],docs_obrigatorios:['Portaria de aprovação','Plano de trabalho','Relatório de execução','NF ou recibo de cada pagamento','Comprovantes de recolhimento de guias','Extrato bancário da conta do projeto']},
+  {id:'audiovisual',name:'Lei do Audiovisual',num:'Lei 8.685/93',scope:'Federal',desc:'Incentivo à produção de obras audiovisuais. Art. 1º, 1º-A, 3º e 3º-A.',rules:{iss:'5%',irrf_pf:'Tabela progressiva',irrf_pj:'1,5%',prazo_prestacao:'60 dias via SALIC',sistema_oficial:'SALIC'},cnaes:['5911-1/01','5911-1/02','5912-0/01','5912-0/99','5913-8/00'],docs_obrigatorios:['Certidão de registro na Ancine','Relatório de bilheteria','Comprovantes de veiculação']},
+  {id:'proac_sp',name:'ProAC-SP',num:'Lei 12.268/06 — SP',scope:'Estadual — SP',desc:'Programa de Ação Cultural do Estado de São Paulo.',rules:{admin_max:'15% do total aprovado',iss:'5%',irrf_pf:'Tabela progressiva',prazo_prestacao:'90 dias após encerramento',sistema_oficial:'ProAC Online (proac.sp.gov.br)'},cnaes:['9001-9/01','9001-9/02','9003-5/00','9002-7/01'],docs_obrigatorios:['Resolução de aprovação','Relatório de atividades','Listagem de público atendido']},
+  {id:'paulo_gustavo',name:'Lei Paulo Gustavo',num:'LC 195/2022',scope:'Federal',desc:'Transferência de recursos federais para estados e municípios apoiarem cultura.',rules:{prazo_prestacao:'12 meses após encerramento (conforme Termo de Fomento)',sistema_oficial:'Plataforma do ente federativo'},cnaes:['9001-9/01','9001-9/02','9001-9/03'],docs_obrigatorios:['Termo de Fomento','Relatório de execução','NFs e recibos','Extrato bancário']},
+  {id:'aldir_blanc',name:'Aldir Blanc 2 (PNAB)',num:'LC 195/2022 — Art. 5º',scope:'Federal',desc:'Política Nacional Aldir Blanc — transferências para estados e municípios.',rules:{prazo_prestacao:'Conforme convênio com ente federativo',sistema_oficial:'SICONV / Transferegov'},cnaes:['9001-9/01','9001-9/02','9001-9/03','9003-5/00'],docs_obrigatorios:['Plano de trabalho','Relatório de execução','Extrato bancário']},
+  {id:'fsa',name:'FSA — Fundo Setorial do Audiovisual',num:'Lei 11.437/06',scope:'Federal',desc:'Fundo gerido pela Ancine para financiamento de obras audiovisuais.',rules:{irrf_pf:'Tabela progressiva',irrf_pj:'1,5%',sistema_oficial:'SICAV (Ancine)'},cnaes:['5911-1/01','5911-1/02','5912-0/01'],docs_obrigatorios:['Registro Ancine','Relatório de circulação','Comprovantes de exibição']},
+  {id:'esporte',name:'Lei de Incentivo ao Esporte',num:'Lei 11.438/06',scope:'Federal',desc:'Incentivo fiscal para projetos esportivos e paradesportivos.',rules:{irrf_pf:'Tabela progressiva',irrf_pj:'1,5%',admin_max:'20%',sistema_oficial:'SIEX (ME)'},cnaes:['9319-1/01','9319-1/99','8591-1/00'],docs_obrigatorios:['Certificado ME','Relatório de execução','Comprovante de atletas beneficiados']},
+  {id:'bndes',name:'BNDES Projetos Culturais',num:'—',scope:'Federal',desc:'Financiamento reembolsável e não reembolsável do BNDES para cultura.',rules:{prazo_prestacao:'Conforme contrato BNDES',sistema_oficial:'Portal BNDES'},cnaes:['9001-9/01','9002-7/01','9003-5/00'],docs_obrigatorios:['Contrato BNDES','Relatório de execução','Auditor independente']},
+];
+
+const DB = {
+  projects:[
+    {id:1,name:'Festival Música Brasileira 2026',pronac:'225.123',law:'rouanet',value:850000,captado:720000,executor:'Cia Arte Viva',cnpj:'12.345.678/0001-90',status:'em_execucao',pct:62,approved:'2025-11-10',conta:'Itaú 0341/12345-6'},
+    {id:2,name:'Documentário Patrimônio SP',pronac:'226.045',law:'audiovisual',value:320000,captado:320000,executor:'Produtora Olhar',cnpj:'98.765.432/0001-10',status:'em_execucao',pct:38,approved:'2026-01-20',conta:'Bradesco 0237/11111-2'},
+    {id:3,name:'Circo Social Periferia',pronac:'LPG-2026-0033',law:'paulo_gustavo',value:180000,captado:180000,executor:'Grupo Estrada',cnpj:'55.666.777/0001-44',status:'aprovado',pct:5,approved:'2026-04-05',conta:'Caixa 0104/22222-3'},
+    {id:4,name:'Exposição Arte Contemporânea',pronac:'224.890',law:'rouanet',value:620000,captado:600000,executor:'Galeria Forma',cnpj:'33.444.555/0001-22',status:'em_execucao',pct:85,approved:'2025-08-12',conta:'Santander 0033/33333-4'},
+    {id:5,name:'Curta-metragem Amazônia',pronac:'FSA-2025-0077',law:'fsa',value:250000,captado:250000,executor:'Cineasta Coletivo',cnpj:'77.888.999/0001-55',status:'prestacao',pct:100,approved:'2025-06-01',conta:'Nubank/Nu Pagamentos'},
+    {id:6,name:'Teatro Inclusivo Libras',pronac:'AB2-2026-0112',law:'aldir_blanc',value:95000,captado:90000,executor:'Cia Sinais',cnpj:'11.222.333/0001-66',status:'aprovado',pct:5,approved:'2026-05-18',conta:'Itaú 0341/44444-5'},
+  ],
+  rubricas:[
+    {proj_id:1,grupo:'Produção',rubrica:'Produção artística',aprovado:280000,contratado:200000,pago:174000},
+    {proj_id:1,grupo:'Infraestrutura',rubrica:'Equipamentos e locação',aprovado:150000,contratado:130000,pago:95000},
+    {proj_id:1,grupo:'Comunicação',rubrica:'Mkt e divulgação',aprovado:80000,contratado:60000,pago:42000},
+    {proj_id:1,grupo:'Cachê',rubrica:'Cachê artístico',aprovado:200000,contratado:180000,pago:130000},
+    {proj_id:1,grupo:'Admin',rubrica:'Despesas administrativas',aprovado:30000,contratado:18000,pago:18000},
+    {proj_id:1,grupo:'Impostos',rubrica:'Retenções e guias',aprovado:110000,contratado:90000,pago:65000},
+    {proj_id:4,grupo:'Produção',rubrica:'Obras e montagem',aprovado:200000,contratado:190000,pago:188000},
+    {proj_id:4,grupo:'Cachê',rubrica:'Cachê curadores e artistas',aprovado:150000,contratado:140000,pago:138000},
+    {proj_id:4,grupo:'Comunicação',rubrica:'Catálogo e comunicação',aprovado:100000,contratado:90000,pago:88000},
+    {proj_id:4,grupo:'Admin',rubrica:'Despesas administrativas',aprovado:30000,contratado:28000,pago:28000},
+    {proj_id:4,grupo:'Infraestrutura',rubrica:'Seguro e logística',aprovado:140000,contratado:135000,pago:130000},
+  ],
+  payments:[
+    {id:1,vendor:'Carlos Mendes',proj_id:1,rubrica:'Cachê artístico',service:'cache_artistico',personType:'pf',taxRegime:'',gross:8500,status:'pending',date:'2026-06-10',cnae_ok:true,saldo_ok:true},
+    {id:2,vendor:'Produtora Digital Ltda',proj_id:2,rubrica:'Produção audiovisual',service:'servicos_pj',personType:'pj',taxRegime:'lucro_presumido',gross:45000,status:'pending',date:'2026-06-08',cnae_ok:true,saldo_ok:true},
+    {id:3,vendor:'Maria Silva',proj_id:4,rubrica:'Cachê artístico',service:'cache_artistico',personType:'pf',taxRegime:'',gross:3200,status:'approved',date:'2026-06-05',cnae_ok:true,saldo_ok:true},
+    {id:4,vendor:'Gráfica Print Rápido ME',proj_id:1,rubrica:'Comunicação',service:'servicos_pj',personType:'pj',taxRegime:'simples_nacional',gross:12000,status:'paid',date:'2026-05-28',cnae_ok:true,saldo_ok:true},
+    {id:5,vendor:'João Fotógrafo',proj_id:2,rubrica:'Produção audiovisual',service:'cache_artistico',personType:'pf',taxRegime:'',gross:5800,status:'pending',date:'2026-06-12',cnae_ok:true,saldo_ok:true},
+    {id:6,vendor:'Aluguel Equipamentos SA',proj_id:3,rubrica:'Infraestrutura',service:'servicos_pj',personType:'pj',taxRegime:'lucro_real',gross:28000,status:'approved',date:'2026-06-03',cnae_ok:false,saldo_ok:true},
+  ],
+  vendors:[
+    {id:1,name:'Carlos Mendes',type:'PF',doc:'123.456.789-00',cnae:'9001-9/01 — Artes cênicas',regime:'—',bank:'Itaú 0341/12345-6',rfb:'ativo',certs:{federal:'2026-12-01',estadual:'2026-10-15',municipal:'2026-11-30',fgts:'2026-09-01',trabalhista:'2026-08-20'}},
+    {id:2,name:'Produtora Digital Ltda',type:'PJ',doc:'12.345.678/0001-90',cnae:'5911-1/01 — Prod. audiovisual',regime:'Lucro Presumido',bank:'Bradesco 0237/98765-4',rfb:'ativo',certs:{federal:'2026-11-30',estadual:'2026-12-15',municipal:'2026-10-01',fgts:'2026-07-01',trabalhista:'2026-06-15'}},
+    {id:3,name:'Maria Silva',type:'PF',doc:'987.654.321-00',cnae:'9001-9/02 — Música',regime:'—',bank:'Nubank',rfb:'ativo',certs:{federal:'2026-10-30',estadual:'—',municipal:'—',fgts:'—',trabalhista:'—'}},
+    {id:4,name:'Gráfica Print Rápido ME',type:'PJ',doc:'98.765.432/0001-10',cnae:'1813-0/01 — Impressão',regime:'Simples Nacional',bank:'Caixa 0104/54321-0',rfb:'ativo',certs:{federal:'2026-08-15',estadual:'2026-09-30',municipal:'2026-08-01',fgts:'2026-07-20',trabalhista:'2026-07-10'}},
+    {id:5,name:'João Fotógrafo',type:'PF',doc:'456.789.123-00',cnae:'7420-0/01 — Fotografia',regime:'—',bank:'PicPay',rfb:'ativo',certs:{federal:'2026-09-15',estadual:'—',municipal:'—',fgts:'—',trabalhista:'—'}},
+    {id:6,name:'Aluguel Equipamentos SA',type:'PJ',doc:'11.222.333/0001-44',cnae:'7739-0/03 — Locação equipam.',regime:'Lucro Real',bank:'Santander 0033/11223-3',rfb:'inapto',certs:{federal:'2025-12-01',estadual:'2025-11-30',municipal:'2025-10-15',fgts:'2025-09-01',trabalhista:'2025-08-30'}},
+  ],
+  nf:[
+    {num:'NFS-e 1234',emitente:'Produtora Digital Ltda',valor:45000,data:'2026-06-08',solicitacao:'Solicitação #2',sefaz:'válida',status:'vinculada'},
+    {num:'NFS-e 0987',emitente:'Gráfica Print Rápido ME',valor:12000,data:'2026-05-28',solicitacao:'Solicitação #4',sefaz:'válida',status:'vinculada'},
+    {num:'RPA 045',emitente:'Carlos Mendes',valor:8500,data:'2026-06-10',solicitacao:'Solicitação #1',sefaz:'—',status:'aguardando'},
+    {num:'NF-e 5678',emitente:'Aluguel Equipamentos SA',valor:28000,data:'2026-06-03',solicitacao:'Solicitação #6',sefaz:'válida',status:'alerta_cnae'},
+  ],
+  guias:[
+    {tipo:'DARF — IRRF',comp:'06/2026',valor:1800,venc:'2026-07-20',nf:'NFS-e 1234',status:'pendente'},
+    {tipo:'DARF — ISS',comp:'06/2026',valor:2250,venc:'2026-07-15',nf:'NFS-e 1234',status:'pendente'},
+    {tipo:'GPS — INSS',comp:'06/2026',valor:908.86,venc:'2026-07-20',nf:'RPA 045',status:'pago'},
+    {tipo:'DARF — IRRF',comp:'05/2026',valor:637.50,venc:'2026-06-20',nf:'NFS-e 0987',status:'pago'},
+  ],
+  omie:[
+    {data:'2026-06-10',desc:'TED saída — Carlos Mendes',valor:-8500,conta:'Itaú 12345-6',sol:'Solicitação #1',status:'conciliado'},
+    {data:'2026-06-08',desc:'TED saída — Produtora Digital',valor:-45000,conta:'Itaú 12345-6',sol:'Solicitação #2',status:'conciliado'},
+    {data:'2026-06-05',desc:'TED saída — Maria Silva',valor:-3200,conta:'Itaú 12345-6',sol:'Solicitação #3',status:'conciliado'},
+    {data:'2026-06-12',desc:'TED saída — João Fotógrafo',valor:-5800,conta:'Itaú 12345-6',sol:'Pendente na plataforma',status:'pendente'},
+    {data:'2026-06-14',desc:'Débito taxa bancária',valor:-45,conta:'Itaú 12345-6',sol:'—',status:'sem_correspondencia'},
+    {data:'2026-06-01',desc:'Depósito patrocínio XYZ',valor:200000,conta:'Itaú 12345-6',sol:'Captação — Proj. #1',status:'conciliado'},
+  ],
+  contracts:[
+    {id:1,doc:'Contrato de Cachê Artístico — Carlos Mendes',tipo:'Cachê artístico',parties:'CRIAPE × Carlos Mendes',sent:'2026-06-10',status:'signed'},
+    {id:2,doc:'Contrato de Produção Audiovisual',tipo:'Prestação de serviços',parties:'CRIAPE × Produtora Digital Ltda',sent:'2026-06-08',status:'pending'},
+    {id:3,doc:'Contrato de Patrocínio — Festival Música',tipo:'Patrocínio',parties:'CRIAPE × Patrocinador XYZ',sent:'2026-06-01',status:'signed'},
+    {id:4,doc:'Aditivo — Exposição Arte Contemporânea',tipo:'Aditivo contratual',parties:'CRIAPE × Galeria Forma',sent:'2026-06-14',status:'viewed'},
+  ],
+  docs:[
+    {proj_id:1,cat:'Projeto',nome:'Portaria de aprovação — Rouanet',data:'2025-11-10',size:'320 KB',status:'ok'},
+    {proj_id:1,cat:'Projeto',nome:'Plano de trabalho aprovado',data:'2025-11-10',size:'1,2 MB',status:'ok'},
+    {proj_id:1,cat:'Contratos',nome:'Contrato Carlos Mendes (assinado)',data:'2026-06-10',size:'450 KB',status:'ok'},
+    {proj_id:1,cat:'Notas Fiscais',nome:'NFS-e 1234 — Produtora Digital',data:'2026-06-08',size:'120 KB',status:'ok'},
+    {proj_id:1,cat:'Guias',nome:'GPS INSS Jun/2026 (pago)',data:'2026-06-20',size:'85 KB',status:'ok'},
+    {proj_id:1,cat:'Certidões',nome:'CND Federal — CRIAPE (válida até dez/26)',data:'2026-06-01',size:'95 KB',status:'ok'},
+    {proj_id:2,cat:'Projeto',nome:'Portaria de aprovação — FSA',data:'2026-01-20',size:'280 KB',status:'ok'},
+    {proj_id:4,cat:'Projeto',nome:'Portaria de aprovação — Rouanet',data:'2025-08-12',size:'310 KB',status:'ok'},
+    {proj_id:4,cat:'Notas Fiscais',nome:'RPA 045 — Maria Silva',data:'2026-06-05',size:'110 KB',status:'ok'},
+  ],
+  accountability:[
+    {proj_id:5,law:'fsa',deadline:'2026-06-23',done:18,total:22,guias_ok:true,status:'pending'},
+    {proj_id:1,law:'rouanet',deadline:'2027-03-01',done:35,total:40,guias_ok:true,status:'ok'},
+    {proj_id:2,law:'audiovisual',deadline:'2026-12-15',done:8,total:30,guias_ok:false,status:'ok'},
+  ],
+  audit:[
+    {ts:'2026-06-18 09:14:32',user:'vanessa@criape.com.br',action:'CREATE',entity:'PaymentRequest #6',ip:'187.34.12.90',hash:'a3f7c1...'},
+    {ts:'2026-06-18 08:55:10',user:'ana.aprov@criape.com.br',action:'APPROVE',entity:'PaymentRequest #3',ip:'187.34.12.91',hash:'b8e2d4...'},
+    {ts:'2026-06-17 17:22:45',user:'vanessa@criape.com.br',action:'UPDATE',entity:'Project #2',ip:'187.34.12.90',hash:'c1a9f3...'},
+    {ts:'2026-06-17 14:08:03',user:'pedro@criape.com.br',action:'CREATE',entity:'Vendor #6',ip:'200.10.5.44',hash:'d5b7e2...'},
+    {ts:'2026-06-17 11:33:21',user:'lucas@criape.com.br',action:'SUBMIT',entity:'PaymentRequest #5',ip:'187.34.12.92',hash:'e9c4a1...'},
+    {ts:'2026-06-16 16:15:44',user:'vanessa@criape.com.br',action:'LOGIN',entity:'Session',ip:'187.34.12.90',hash:'f2d8b5...'},
+  ],
+  users:[
+    {name:'Vanessa Pires',role:'org_manager',twofa:true,status:'active'},
+    {name:'Ana Aprovadora',role:'financial_approver',twofa:true,status:'active'},
+    {name:'Pedro Coordenador',role:'project_coordinator',twofa:false,status:'active'},
+    {name:'Lucas Produtor',role:'producer',twofa:false,status:'active'},
+    {name:'Sofia Prestação',role:'accountability',twofa:false,status:'invited'},
+    {name:'Carlos (externo)',role:'vendor_external',twofa:false,status:'active'},
+    {name:'Auditor MinC',role:'auditor',twofa:true,status:'active'},
+  ],
+};
+
+// ── HELPERS ──────────────────────────────────────
+const fmt = v => Number(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const pct = (a,b) => b ? Math.round(a/b*100) : 0;
+const initials = n => n.split(' ').map(x=>x[0]).join('').substring(0,2).toUpperCase();
+const getLaw = id => LAWS.find(l=>l.id===id)||{name:id,num:'',scope:''};
+
+const SM = {
+  em_execucao:{c:'sb2',t:'Em execução'},
+  aprovado:{c:'sg',t:'Aprovado'},
+  prestacao:{c:'sa',t:'Prestação'},
+  encerrado:{c:'sl',t:'Encerrado'},
+  pending:{c:'sa',t:'Pendente'},
+  approved:{c:'sb2',t:'Aprovado'},
+  paid:{c:'sg',t:'Pago'},
+  rejected:{c:'sr',t:'Rejeitado'},
+  signed:{c:'sg',t:'Assinado'},
+  viewed:{c:'sb2',t:'Visualizado'},
+  active:{c:'sg',t:'Ativo'},
+  invited:{c:'sa',t:'Convidado'},
+  conciliado:{c:'sg',t:'Conciliado'},
+  pendente:{c:'sa',t:'Pendente'},
+  sem_correspondencia:{c:'sr',t:'Sem correspondência'},
+  vinculada:{c:'sg',t:'Vinculada'},
+  aguardando:{c:'sa',t:'Aguardando'},
+  alerta_cnae:{c:'sr',t:'Alerta CNAE'},
+  pago:{c:'sg',t:'Pago'},
+  ativo:{c:'sg',t:'Ativo'},
+  inapto:{c:'sr',t:'Inapto RFB'},
+};
+const badge = s => { const m=SM[s]||{c:'sl',t:s}; return `<span class="st ${m.c}">${m.t}</span>`; };
+const pbar_el = (v,t,color) => {
+  const p=pct(v,t); const c=color||(p>=100?'var(--red)':p>=80?'var(--amber)':'var(--purple)');
+  return `<div style="display:flex;align-items:center;gap:6px"><div class="pb" style="width:70px"><div class="pf" style="width:${Math.min(p,100)}%;background:${c}"></div></div><span style="font-size:11px">${p}%</span></div>`;
+};
+
+// ── TAX CALC ──────────────────────────────────────
+function calcTax(gross,service,personType,taxRegime){
+  let iss=0,ir=0,inss=0,pis=0;
+  if(personType==='pj') iss=gross*0.05;
+  if(personType==='pf'){
+    if(['cache_artistico','servicos_pf'].includes(service)&&gross>=1903.99){
+      if(gross>4664.68)ir=gross*0.275;
+      else if(gross>3751.05)ir=gross*0.225;
+      else if(gross>2826.65)ir=gross*0.15;
+      else ir=gross*0.075;
+    }
+    inss=Math.min(gross*0.11,908.86);
+  } else if(taxRegime!=='simples_nacional'){
+    ir=gross*0.015; pis=gross*0.0465;
+  }
+  return{iss,ir,inss,pis,net:gross-iss-ir-inss-pis};
+}
+
+// ── SEMAPHORE CHECK ──────────────────────────────
+function buildSemaphore(gross,service,personType,taxRegime,proj_id,rubrica,vendor_id){
+  const proj = DB.projects.find(p=>p.id==proj_id)||{};
+  const rub = DB.rubricas.find(r=>r.proj_id==proj_id&&r.rubrica===rubrica);
+  const vendor = DB.vendors.find(v=>v.id==vendor_id)||{};
+  const saldo = rub ? (rub.aprovado - rub.pago) : 999999;
+  const certExp = vendor.certs ? Object.values(vendor.certs).some(d=>d!=='—'&&new Date(d)<new Date()) : false;
+  const rfbOk = vendor.rfb !== 'inapto';
+  const law = getLaw(proj.law||'');
+  const checks = [
+    {ok:gross<=saldo, warn:false, lbl:'Saldo disponível na rubrica', detail: rub ? `Aprovado: ${fmt(rub.aprovado)} | Pago: ${fmt(rub.pago)} | Disponível: ${fmt(saldo)}` : 'Rubrica não encontrada'},
+    {ok:true, warn:false, lbl:'Tipo de despesa permitido pela lei', detail:`${law.name} — ${service.replace(/_/g,' ')} verificado ✓`},
+    {ok:vendor.cnae_ok!==false, warn:false, lbl:'CNAE do fornecedor compatível', detail: vendor.cnae||'Verificar CNAE do fornecedor'},
+    {ok:rfbOk, warn:!rfbOk, lbl:'Situação na Receita Federal', detail: vendor.rfb ? `Status: ${vendor.rfb}` : 'Não verificado'},
+    {ok:!certExp, warn:certExp, lbl:'Certidões negativas válidas', detail: certExp ? '⚠ Uma ou mais certidões vencidas' : 'Todas válidas'},
+    {ok:true, warn:false, lbl:'Verificação de conflito de interesses', detail:'Nenhum vínculo societário identificado'},
+    {ok:personType==='pj'||gross<1903.99||true, warn:false, lbl:'Retenção de IR calculada', detail:`Tipo: ${personType.toUpperCase()} — verificado`},
+    {ok:true, warn:false, lbl:'ISS — município do prestador', detail:personType==='pj'?'ISS 5% aplicável':'Não se aplica (PF)'},
+  ];
+  let html = '<div class="sem">';
+  checks.forEach(c=>{
+    const cls = !c.ok ? 'sem-r' : c.warn ? 'sem-a' : 'sem-g';
+    const dot = !c.ok ? 'dr' : c.warn ? 'da' : 'dg';
+    html += `<div class="sem-row ${cls}"><span class="dot ${dot}"></span><div><strong>${c.lbl}</strong><div style="font-size:11px;opacity:.8">${c.detail}</div></div></div>`;
+  });
+  return html + '</div>';
+}
+</script>
+<script>
+// ── RENDER FUNCTIONS ─────────────────────────────
+function renderDashboard(){
+  document.getElementById('d-pend').textContent = DB.payments.filter(p=>p.status==='pending').length;
+  document.getElementById('d-proj').textContent = DB.projects.filter(p=>p.status!=='encerrado').length;
+  document.getElementById('d-projs').innerHTML = DB.projects.slice(0,5).map(p=>{
+    const law = getLaw(p.law);
+    return `<tr><td><strong style="font-size:12px">${p.name.substring(0,30)}</strong></td><td><span class="tag">${law.name}</span></td><td>${badge(p.status)}</td><td>${pbar_el(p.pct,100)}</td></tr>`;
+  }).join('');
+  const alerts = [
+    {cls:'al-e',icon:'ti-alert-triangle',msg:'Fornecedor "Aluguel Equipamentos SA" com status INAPTO na RFB — pagamento bloqueado'},
+    {cls:'al-w',icon:'ti-clock',msg:'Prestação de contas "Curta Amazônia" vence em 5 dias (23/06/2026)'},
+    {cls:'al-e',icon:'ti-file-x',msg:'Certidão federal de "Aluguel Equipamentos SA" vencida desde dez/2025'},
+    {cls:'al-w',icon:'ti-alert-circle',msg:'Rubrica "Despesas admin." atingiu 100% do aprovado — bloqueio automático ativo'},
+    {cls:'al-i',icon:'ti-info-circle',msg:'3 pagamentos aguardando aprovação — nível 1 (Coordenador Financeiro)'},
+    {cls:'al-w',icon:'ti-arrows-exchange',msg:'14 lançamentos Omie sem conciliação — verificar movimentações'},
+    {cls:'al-i',icon:'ti-file-invoice',msg:'DARF IRRF e ISS ref. 06/2026 vencem em 20/07 — gerar guias'},
+  ];
+  document.getElementById('d-alerts').innerHTML = alerts.map(a=>`<div class="alert ${a.cls}" style="margin-bottom:6px"><i class="ti ${a.icon}"></i><span>${a.msg}</span></div>`).join('');
+  const cats=[
+    {name:'Produção artística',used:280000,total:400000},
+    {name:'Infraestrutura',used:95000,total:150000},
+    {name:'Comunicação',used:42000,total:80000},
+    {name:'Cachê artístico',used:130000,total:200000},
+    {name:'Despesas admin.',used:18000,total:18000},
+    {name:'Retenções/Guias',used:65000,total:110000},
+  ];
+  document.getElementById('d-rub').innerHTML = cats.map(c=>{
+    const p=pct(c.used,c.total); const col=p>=100?'var(--red)':p>=80?'var(--amber)':'var(--purple)';
+    return `<div class="rub-bar"><div class="lbl"><span>${c.name}</span><span style="color:var(--text2)">${fmt(c.used)} / ${fmt(c.total)}</span></div><div class="pb" style="width:100%;height:6px"><div class="pf" style="width:${Math.min(p,100)}%;background:${col}"></div></div><div style="text-align:right;font-size:10px;color:var(--text2);margin-top:2px">${p}% ${p>=100?'⚠ Bloqueado':p>=80?'⚠ Atenção':''}</div></div>`;
+  }).join('');
+}
+
+function renderProjects(){
+  const flaw = document.getElementById('p-law-filter')?.value||'';
+  const list = flaw ? DB.projects.filter(p=>getLaw(p.law).name===flaw) : DB.projects;
+  document.getElementById('p-cnt').textContent = list.length;
+  document.getElementById('projects-tbody').innerHTML = list.map(p=>{
+    const law=getLaw(p.law); const captPct=pct(p.captado,p.value);
+    return `<tr>
+      <td><strong>${p.name}</strong><br><span style="font-size:10px;color:var(--text2)">${p.executor} • ${p.conta}</span></td>
+      <td style="font-size:11px;color:var(--text2)">${p.pronac}</td>
+      <td><span class="tag">${law.name}</span><br><span style="font-size:10px;color:var(--text2)">${law.scope}</span></td>
+      <td>${fmt(p.value)}</td>
+      <td>${pbar_el(p.captado,p.value,'var(--teal)')}<span style="font-size:10px;color:var(--text2)">${fmt(p.captado)}</span></td>
+      <td>${badge(p.status)}</td>
+      <td>${pbar_el(p.pct,100)}</td>
+      <td><button class="btn btn-sm" onclick="showToast('Abrindo projeto...')"><i class="ti ti-eye"></i></button></td>
+    </tr>`;
+  }).join('');
+  // populate selects
+  ['rub-proj','doc-proj-filter'].forEach(id=>{
+    const el=document.getElementById(id); if(!el)return;
+    const cur=el.value;
+    el.innerHTML='<option value="">— Selecione —</option>'+DB.projects.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+    if(cur)el.value=cur;
+  });
+}
+
+function renderRubricas(){
+  const pid=parseInt(document.getElementById('rub-proj')?.value||0);
+  const el=document.getElementById('rub-content');
+  if(!pid){el.innerHTML='<div class="empty"><i class="ti ti-chart-bar"></i>Selecione um projeto acima</div>';return;}
+  const proj=DB.projects.find(p=>p.id===pid);
+  const rubs=DB.rubricas.filter(r=>r.proj_id===pid);
+  if(!rubs.length){el.innerHTML='<div class="empty"><i class="ti ti-chart-bar"></i>Nenhuma rubrica cadastrada para este projeto</div>';return;}
+  const law=getLaw(proj?.law||'');
+  const totAp=rubs.reduce((s,r)=>s+r.aprovado,0);
+  const totPg=rubs.reduce((s,r)=>s+r.pago,0);
+  el.innerHTML=`
+  <div class="metrics" style="margin-bottom:14px">
+    <div class="mc"><div class="mc-lbl">Total aprovado</div><div class="mc-val" style="font-size:17px">${fmt(totAp)}</div></div>
+    <div class="mc"><div class="mc-lbl">Total executado</div><div class="mc-val" style="font-size:17px">${fmt(totPg)}</div></div>
+    <div class="mc"><div class="mc-lbl">Saldo disponível</div><div class="mc-val" style="font-size:17px;color:var(--teal)">${fmt(totAp-totPg)}</div></div>
+    <div class="mc"><div class="mc-lbl">% executado</div><div class="mc-val">${pct(totPg,totAp)}%</div></div>
+  </div>
+  <div class="sec">
+    <div class="sec-h"><span class="sec-t">Comparativo por rubrica — ${proj?.name}</span><span class="tag">${law.name}</span></div>
+    <table><thead><tr><th>Grupo</th><th>Rubrica</th><th>Aprovado</th><th>Contratado</th><th>Solicitado</th><th>Pago</th><th>Saldo</th><th>% Exec.</th><th>Status</th></tr></thead>
+    <tbody>${rubs.map(r=>{
+      const saldo=r.aprovado-r.pago; const p=pct(r.pago,r.aprovado);
+      const cls=p>=100?'sr':p>=80?'sa':'sg';
+      return `<tr>
+        <td style="font-size:11px;color:var(--text2)">${r.grupo}</td>
+        <td><strong>${r.rubrica}</strong></td>
+        <td>${fmt(r.aprovado)}</td>
+        <td>${fmt(r.contratado)}</td>
+        <td style="color:var(--amber)">${fmt(r.contratado-r.pago)}</td>
+        <td><strong>${fmt(r.pago)}</strong></td>
+        <td style="color:${saldo<0?'var(--red)':'var(--teal)'}">${fmt(saldo)}</td>
+        <td>${pbar_el(r.pago,r.aprovado)}</td>
+        <td><span class="st ${cls}">${p>=100?'Esgotado':p>=80?'Atenção':'OK'}</span></td>
+      </tr>`;
+    }).join('')}</tbody></table>
+  </div>`;
+}
+
+let payF='all';
+function fpay(el,f){payF=f;document.querySelectorAll('[onclick^="fpay"]').forEach(e=>e.classList.remove('active'));el.classList.add('active');renderPayments();}
+function renderPayments(){
+  const rows=DB.payments.filter(p=>payF==='all'||p.status===payF);
+  document.getElementById('pay-tbody').innerHTML=rows.map(p=>{
+    const t=calcTax(p.gross,p.service,p.personType,p.taxRegime);
+    const tot=t.iss+t.ir+t.inss+t.pis;
+    const proj=DB.projects.find(pr=>pr.id===p.proj_id)||{};
+    return `<tr>
+      <td><strong>${p.vendor}</strong><br><span style="font-size:10px;color:var(--text2)">${p.personType.toUpperCase()} • ${p.date}</span></td>
+      <td style="font-size:11px;color:var(--text2)">${proj.name?.substring(0,25)||''}</td>
+      <td style="font-size:11px">${p.rubrica}</td>
+      <td>${fmt(p.gross)}</td>
+      <td style="color:var(--rtxt);font-size:11px">${tot>0?'-'+fmt(tot):'—'}</td>
+      <td><strong>${fmt(t.net)}</strong></td>
+      <td>${badge(p.status)}${!p.cnae_ok?'<span class="st sr" style="margin-left:4px;font-size:10px">CNAE ⚠</span>':''}</td>
+      <td style="display:flex;gap:4px">
+        <button class="btn btn-sm" onclick="viewPayment(${p.id})"><i class="ti ti-eye"></i></button>
+        ${p.status==='pending'?`<button class="btn btn-sm btn-ok" onclick="approveP(${p.id})"><i class="ti ti-check"></i></button>`:''}
+      </td>
+    </tr>`;
+  }).join('')||`<tr><td colspan="8"><div class="empty"><i class="ti ti-receipt"></i>Nenhuma solicitação nesta categoria</div></td></tr>`;
+}
+
+function approveP(id){const p=DB.payments.find(x=>x.id===id);if(p)p.status='approved';addAudit('APPROVE',`PaymentRequest #${id}`);updateBadge();renderPayments();renderApprovals();renderDashboard();showToast('Pagamento aprovado!');}
+function rejectP(id){const p=DB.payments.find(x=>x.id===id);if(p)p.status='rejected';addAudit('REJECT',`PaymentRequest #${id}`);updateBadge();renderPayments();renderApprovals();renderDashboard();showToast('Rejeitado','var(--red)');}
+function updateBadge(){const n=DB.payments.filter(p=>p.status==='pending').length;document.getElementById('nb-ap').textContent=n;document.getElementById('ap-msg').textContent=`${n} solicitações aguardando aprovação — nível 1 (Coordenador Financeiro)`;}
+
+function renderApprovals(){
+  updateBadge();
+  const pending=DB.payments.filter(p=>p.status==='pending');
+  document.getElementById('ap-list').innerHTML=pending.map(p=>{
+    const t=calcTax(p.gross,p.service,p.personType,p.taxRegime);
+    const tot=t.iss+t.ir+t.inss+t.pis;
+    const proj=DB.projects.find(pr=>pr.id===p.proj_id)||{};
+    const vendor=DB.vendors.find(v=>v.name===p.vendor)||{};
+    return `<div class="ap-card">
+      <div style="display:flex;justify-content:space-between;margin-bottom:10px">
+        <div><div style="font-size:14px;font-weight:500">${p.vendor}</div>
+        <div style="font-size:11px;color:var(--text2)">${proj.name||''} • ${p.rubrica} • ${p.date}</div></div>
+        <div style="text-align:right"><div style="font-size:13px;font-weight:600">${fmt(p.gross)}</div><div style="font-size:12px;color:var(--teal)">→ ${fmt(t.net)} líquido</div></div>
+      </div>
+      ${buildSemaphore(p.gross,p.service,p.personType,p.taxRegime,p.proj_id,p.rubrica,vendor.id)}
+      <div style="background:var(--bg2);border-radius:var(--r);padding:10px;margin-top:10px">
+        ${t.iss>0?`<div class="tr"><span>ISS (5%)</span><span>-${fmt(t.iss)}</span></div>`:''}
+        ${t.ir>0?`<div class="tr"><span>IRRF</span><span>-${fmt(t.ir)}</span></div>`:''}
+        ${t.inss>0?`<div class="tr"><span>INSS (11%, cap R$ 908,86)</span><span>-${fmt(t.inss)}</span></div>`:''}
+        ${t.pis>0?`<div class="tr"><span>PIS/COFINS/CSLL (4,65%)</span><span>-${fmt(t.pis)}</span></div>`:''}
+        ${tot===0?`<div style="font-size:12px;color:var(--teal)">Simples Nacional — sem retenção na fonte</div>`:''}
+        <div class="tr tot"><span>Total retido</span><span>${fmt(tot)}</span></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="btn btn-ok btn-sm" style="flex:1" onclick="approveP(${p.id})"><i class="ti ti-check"></i> Aprovar</button>
+        <button class="btn btn-no btn-sm" style="flex:1" onclick="rejectP(${p.id})"><i class="ti ti-x"></i> Rejeitar</button>
+        <button class="btn btn-sm" onclick="showToast('Complementação solicitada por e-mail')"><i class="ti ti-message"></i> Solicitar ajuste</button>
+      </div>
+    </div>`;
+  }).join('')||`<div class="empty"><i class="ti ti-checks"></i>Nenhuma aprovação pendente!</div>`;
+}
+
+function renderNF(){
+  document.getElementById('nf-tbody').innerHTML=DB.nf.map(n=>`<tr>
+    <td><strong>${n.num}</strong></td><td>${n.emitente}</td><td>${fmt(n.valor)}</td>
+    <td style="font-size:11px">${n.data}</td><td style="font-size:11px;color:var(--text2)">${n.solicitacao}</td>
+    <td><span class="st ${n.sefaz==='válida'?'sg':'sl'}">${n.sefaz}</span></td>
+    <td>${badge(n.status)}</td>
+    <td><button class="btn btn-sm" onclick="showToast('Abrindo NF...')"><i class="ti ti-eye"></i></button></td>
+  </tr>`).join('');
+  document.getElementById('guias-tbody').innerHTML=DB.guias.map(g=>`<tr>
+    <td><strong>${g.tipo}</strong></td><td>${g.comp}</td><td>${fmt(g.valor)}</td>
+    <td style="font-size:11px">${g.venc}</td><td style="font-size:11px;color:var(--text2)">${g.nf}</td>
+    <td>${badge(g.status)}</td>
+    <td><button class="btn btn-sm" onclick="showToast(${g.status==='pago'?'\'Comprovante disponível\'':'\'Gerando guia...\''})"><i class="ti ti-${g.status==='pago'?'file-check':'download'}"></i></button></td>
+  </tr>`).join('');
+}
+
+function renderOmie(){
+  document.getElementById('omie-tbody').innerHTML=DB.omie.map(o=>`<tr>
+    <td style="font-size:11px">${o.data}</td>
+    <td>${o.desc}</td>
+    <td style="font-weight:500;color:${o.valor<0?'var(--red)':'var(--teal)'}">${fmt(o.valor)}</td>
+    <td style="font-size:11px;color:var(--text2)">${o.conta}</td>
+    <td style="font-size:11px">${o.sol}</td>
+    <td>${badge(o.status)}</td>
+    <td>${o.status!=='conciliado'?`<button class="btn btn-sm" onclick="showToast('Vinculando lançamento...')"><i class="ti ti-link"></i> Vincular</button>`:''}</td>
+  </tr>`).join('');
+}
+
+function renderVendors(){
+  document.getElementById('v-cnt').textContent=DB.vendors.length;
+  document.getElementById('vend-tbody').innerHTML=DB.vendors.map(v=>{
+    const today=new Date();
+    const certBadges=Object.entries(v.certs||{}).map(([k,d])=>{
+      if(d==='—')return'';
+      const exp=new Date(d)<today;
+      return `<span class="badge-cert ${exp?'bc-exp':'bc-ok'}" title="${k}: ${d}">${k.substring(0,3).toUpperCase()}${exp?' ⚠':' ✓'}</span>`;
+    }).join(' ');
+    return `<tr>
+      <td><strong>${v.name}</strong></td>
+      <td><span class="tag" style="background:${v.type==='PF'?'var(--abg)':'var(--bluebg)'};color:${v.type==='PF'?'var(--atxt)':'var(--bluetxt)'}">${v.type}</span></td>
+      <td style="font-size:11px;color:var(--text2)">${v.doc}</td>
+      <td style="font-size:11px">${v.cnae}</td>
+      <td style="font-size:11px">${v.regime}</td>
+      <td style="font-size:10px">${certBadges||'—'}</td>
+      <td>${badge(v.rfb)}</td>
+      <td><button class="btn btn-sm" onclick="viewVendor(${v.id})"><i class="ti ti-eye"></i></button></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderContracts(){
+  document.getElementById('cont-tbody').innerHTML=DB.contracts.map(c=>`<tr>
+    <td><strong style="font-size:12px">${c.doc}</strong></td>
+    <td><span class="tag" style="background:var(--bluebg);color:var(--bluetxt)">${c.tipo}</span></td>
+    <td style="font-size:11px;color:var(--text2)">${c.parties}</td>
+    <td style="font-size:11px">${c.sent}</td>
+    <td>${badge(c.status)}</td>
+    <td><button class="btn btn-sm" onclick="showToast('Abrindo no Clicksign...')"><i class="ti ti-external-link"></i></button></td>
+  </tr>`).join('');
+}
+
+function renderAccountability(){
+  document.getElementById('acc-tbody').innerHTML=DB.accountability.map(a=>{
+    const proj=DB.projects.find(p=>p.id===a.proj_id)||{};
+    const law=getLaw(a.law);
+    const days=Math.ceil((new Date(a.deadline)-new Date())/86400000);
+    const urg=days<10?'sr':days<30?'sa':'sg';
+    const dp=pct(a.done,a.total);
+    return `<tr>
+      <td><strong>${proj.name}</strong></td>
+      <td><span class="tag">${law.name}</span></td>
+      <td><span class="st ${urg}">${a.deadline} (${days}d)</span></td>
+      <td>${pbar_el(a.done,a.total)}<span style="font-size:11px;color:var(--text2);margin-left:6px">${a.done}/${a.total}</span></td>
+      <td>${a.guias_ok?'<span class="st sg">Pagas</span>':'<span class="st sr">Pendente ⚠</span>'}</td>
+      <td>${badge(a.status==='ok'?'approved':'pending')}</td>
+      <td><button class="btn btn-sm" onclick="showToast('Abrindo checklist...')"><i class="ti ti-clipboard-list"></i></button></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderAudit(){
+  document.getElementById('audit-tbody').innerHTML=DB.audit.map(a=>`<tr>
+    <td style="font-size:11px;color:var(--text2)">${a.ts}</td>
+    <td style="font-size:11px">${a.user}</td>
+    <td><span class="st sg" style="font-size:10px">${a.action}</span></td>
+    <td style="font-size:11px">${a.entity}</td>
+    <td style="font-size:11px;color:var(--text2)">${a.ip}</td>
+    <td><code>${a.hash}</code></td>
+  </tr>`).join('');
+}
+
+function renderUsers(){
+  document.getElementById('users-tbody').innerHTML=DB.users.map(u=>`<tr>
+    <td><div style="display:flex;align-items:center;gap:7px"><div class="av av-p" style="font-size:10px">${initials(u.name)}</div>${u.name}</div></td>
+    <td style="font-size:11px;color:var(--text2)">${u.role}</td>
+    <td><span class="st ${u.twofa?'sg':'sa'}">${u.twofa?'✓ Ativo':'Inativo'}</span></td>
+    <td>${badge(u.status)}</td>
+  </tr>`).join('');
+}
+
+function renderDocs(){
+  const pid=parseInt(document.getElementById('doc-proj-filter')?.value||0);
+  const list=pid?DB.docs.filter(d=>d.proj_id===pid):DB.docs;
+  const cats=[...new Set(list.map(d=>d.cat))];
+  document.getElementById('docs-list').innerHTML=cats.map(cat=>{
+    const items=list.filter(d=>d.cat===cat);
+    return `<div class="sec" style="margin-bottom:10px">
+      <div class="sec-h"><span class="sec-t"><i class="ti ti-folder"></i> ${cat}</span><span style="font-size:11px;color:var(--text2)">${items.length} arquivo(s)</span></div>
+      ${items.map(d=>`<div class="doc-item">
+        <i class="ti ti-file" style="font-size:18px;color:var(--purple);flex-shrink:0"></i>
+        <div style="flex:1"><div style="font-size:12px;font-weight:500">${d.nome}</div><div style="font-size:10px;color:var(--text2)">${d.data} • ${d.size}</div></div>
+        <button class="btn btn-sm" onclick="showToast('Baixando...')"><i class="ti ti-download"></i></button>
+      </div>`).join('')}
+    </div>`;
+  }).join('')||'<div class="empty"><i class="ti ti-folder"></i>Nenhum documento encontrado</div>';
+}
+
+function renderLaws(){
+  document.getElementById('law-nav').innerHTML=LAWS.map(l=>`<div class="law-item" onclick="showLaw('${l.id}')">
+    <div style="font-size:12px;font-weight:500">${l.name}</div>
+    <div style="font-size:10px;color:var(--text2)">${l.num} • ${l.scope}</div>
+  </div>`).join('');
+}
+
+function showLaw(id){
+  const l=LAWS.find(x=>x.id===id); if(!l)return;
+  document.getElementById('law-detail').innerHTML=`
+  <div class="sec" style="margin-bottom:12px">
+    <div class="sec-h"><span class="sec-t">${l.name}</span><span class="tag" style="background:var(--bluebg);color:var(--bluetxt)">${l.scope}</span></div>
+    <div style="padding:12px 14px"><p style="font-size:12px;color:var(--text2);margin-bottom:10px">${l.desc}</p>
+    <div class="gr c2" style="gap:10px">
+      <div><div style="font-size:11px;font-weight:500;margin-bottom:6px;color:var(--text2)">REGRAS FISCAIS</div>
+      ${Object.entries(l.rules||{}).map(([k,v])=>`<div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:.5px solid var(--border)"><span style="color:var(--text2)">${k.replace(/_/g,' ').toUpperCase()}</span><span style="text-align:right;max-width:60%">${v}</span></div>`).join('')}
+      </div>
+      <div><div style="font-size:11px;font-weight:500;margin-bottom:6px;color:var(--text2)">CNAEs PERMITIDOS</div>
+      ${(l.cnaes||[]).map(c=>`<div style="font-size:12px;padding:3px 0;border-bottom:.5px solid var(--border)">${c}</div>`).join('')}
+      <div style="font-size:11px;font-weight:500;margin:10px 0 6px;color:var(--text2)">DOCUMENTAÇÃO OBRIGATÓRIA</div>
+      ${(l.docs_obrigatorios||[]).map(d=>`<div style="font-size:12px;padding:3px 0;border-bottom:.5px solid var(--border)"><i class="ti ti-check" style="color:var(--teal)"></i> ${d}</div>`).join('')}
+      </div>
+    </div></div>
+  </div>`;
+  document.querySelectorAll('.law-item').forEach(el=>el.style.background='');
+  const active=document.querySelector(`[onclick="showLaw('${id}')"]`);
+  if(active)active.style.background='var(--pbg)';
+}
+
+// ── AI CHAT ───────────────────────────────────────
+const KB = {
+  rouanet: 'A Lei Rouanet (8.313/91) permite dedução de IR para pessoa física (até 80% do imposto devido) e jurídica (até 40%). Rubricas permitidas: produção artística, infraestrutura, cachê, comunicação e administração (limite de 15%). O teto de cachê não é fixo — deve ser compatível com o mercado (IN MinC 8/2017 Art. 35). Prestação via SALIC em até 60 dias do encerramento.\n\n📎 Ref: Lei 8.313/91; IN MinC 8/2017',
+  audiovisual: 'A Lei do Audiovisual (8.685/93) incentiva obras audiovisuais brasileiras. Art. 1º (distribuição), 1º-A, 3º e 3º-A (coprodução). A prestação é feita via SALIC com prazo de 60 dias. Retenções: IRRF 1,5% (PJ), tabela progressiva (PF), ISS 5% (PJ).\n\n📎 Ref: Lei 8.685/93; IN SAv 8/2013',
+  proac: 'O ProAC-SP (Lei 12.268/06) é gerido pela Secretaria de Cultura do Estado de SP. Permite pagar: cachês, equipe técnica, locação de espaços/equipamentos, materiais, comunicação e despesas administrativas (até 15%). Prazo de prestação: 90 dias. Sistema: ProAC Online.\n\n📎 Ref: Dec. SP 61.645/2015; Res. SC 136/2019',
+  paulo_gustavo: 'A Lei Paulo Gustavo (LC 195/2022) transfere recursos federais para estados e municípios apoiarem artistas e espaços culturais. O prazo de prestação é de 12 meses após encerramento, conforme o Termo de Fomento assinado com o ente federativo.\n\n📎 Ref: LC 195/22, Art. 27; Portaria MinC 9/2023',
+  aldir_blanc: 'O Aldir Blanc 2 (PNAB — LC 195/22, Art. 5º) é a segunda edição da política de fomento à cultura pós-pandemia. Os prazos e regras de prestação variam conforme o instrumento firmado com o ente federativo (município ou estado). Gestão via SICONV/Transferegov.\n\n📎 Ref: LC 195/22; Portaria MinC 7/2023',
+  impostos: 'Para pessoa física (PF): IRRF pela tabela progressiva (7,5% a 27,5% para rendimentos acima de R$ 1.903,99) + INSS autônomo (11%, cap R$ 908,86/mês). Isento de ISS.\n\nPara pessoa jurídica (PJ): ISS (5%) + IRRF (1,5%) + PIS/COFINS/CSLL (4,65%) — exceto Simples Nacional, que não sofre retenção na fonte.\n\n📎 Ref: IN RFB 1.234/2012; IN RFB 2.145/2023',
+  cnae: 'O CNAE (Classificação Nacional de Atividades Econômicas) determina se um fornecedor pode emitir NF para determinado serviço. Exemplos relevantes: 9001-9/01 (Artes cênicas), 9001-9/02 (Música), 7420-0/01 (Fotografia), 5911-1/01 (Produção audiovisual), 1813-0/01 (Impressão). O sistema verifica automaticamente a compatibilidade ao criar uma solicitação de pagamento.\n\n📎 Ref: IBGE CNAE 2.3; IN MinC 8/2017',
+  prestacao: 'A prestação de contas varia por lei: Rouanet e Audiovisual → SALIC em 60 dias. ProAC-SP → ProAC Online em 90 dias. Paulo Gustavo/Aldir Blanc → 12 meses via sistema do ente federativo. FSA → SICAV (Ancine) em 60 dias. Documentação mínima: relatório de execução físico-financeiro, NFs/recibos de todos os pagamentos, comprovantes de guias pagas, extrato bancário conciliado.\n\n📎 Ref: Por lei especificada acima',
+  fsa: 'O FSA (Fundo Setorial do Audiovisual — Lei 11.437/06) é gerido pela Ancine e financia obras audiovisuais brasileiras. Prestação via SICAV (Ancine) em 60 dias. Exige registro na Ancine, relatório de circulação e comprovantes de exibição. Retenções: IRRF padrão + ISS 5%.\n\n📎 Ref: Lei 11.437/06; IN Ancine 128/2019',
+  esporte: 'A Lei de Incentivo ao Esporte (11.438/06) permite dedução de IR para patrocínios a projetos esportivos e paradesportivos. Administração máxima: 20%. Sistema oficial: SIEX (Ministério do Esporte). CNAEs típicos: 9319-1/01, 9319-1/99.\n\n📎 Ref: Lei 11.438/06; Decreto 6.180/2007',
+};
+
+const FAQ_LIST = [
+  'Qual o teto de cachê na Lei Rouanet?',
+  'O que pode ser pago com ProAC-SP?',
+  'Quais impostos incidem sobre PF (cachê artístico)?',
+  'Como verificar CNAE compatível com o serviço?',
+  'Qual o prazo de prestação de contas do Paulo Gustavo?',
+  'Posso pagar artista estrangeiro com recursos da Lei Rouanet?',
+  'O que é o FSA e como funciona a prestação?',
+  'Simples Nacional tem retenção na fonte?',
+];
+
+function renderAI(){
+  document.getElementById('faq-list').innerHTML=FAQ_LIST.map(q=>`<div onclick="askQ('${q}')" style="padding:7px 12px;font-size:12px;cursor:pointer;border-bottom:.5px solid var(--border)">${q}</div>`).join('');
+  document.getElementById('laws-list-ai').innerHTML=LAWS.map(l=>`<div style="padding:4px 0;border-bottom:.5px solid var(--border)"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--purple);margin-right:6px"></span>${l.name} <span style="color:var(--text3)">${l.scope}</span></div>`).join('');
+}
+
+function sendChat(){
+  const inp=document.getElementById('chat-in'); const msg=inp.value.trim(); if(!msg)return;
+  const wrap=document.getElementById('chat-msgs');
+  wrap.innerHTML+=`<div class="msg mu">${msg}</div>`; inp.value=''; wrap.scrollTop=wrap.scrollHeight;
+  setTimeout(()=>{
+    const low=msg.toLowerCase();
+    let ans='Entendido. Posso ajudar com dúvidas sobre qualquer lei de incentivo. Consulte as leis listadas ao lado ou faça uma pergunta específica sobre rubricas, retenções, CNAEs, tetos ou prestação de contas.';
+    if(low.includes('rouanet'))ans=KB.rouanet;
+    else if(low.includes('audiovisual'))ans=KB.audiovisual;
+    else if(low.includes('proac'))ans=KB.proac;
+    else if(low.includes('paulo')||low.includes('lc 195'))ans=KB.paulo_gustavo;
+    else if(low.includes('aldir'))ans=KB.aldir_blanc;
+    else if(low.includes('imposto')||low.includes('irrf')||low.includes('inss')||low.includes('retenção'))ans=KB.impostos;
+    else if(low.includes('cnae'))ans=KB.cnae;
+    else if(low.includes('prestação')||low.includes('prazo'))ans=KB.prestacao;
+    else if(low.includes('fsa')||low.includes('ancine'))ans=KB.fsa;
+    else if(low.includes('esporte'))ans=KB.esporte;
+    else if(low.includes('simples'))ans='Fornecedores enquadrados no Simples Nacional não sofrem retenção na fonte de IRPJ/CSLL/PIS/COFINS. Porém, o ISS ainda pode ser retido dependendo da legislação municipal. O comprovante de enquadramento no Simples deve constar no cadastro do fornecedor.\n\n📎 Ref: LC 123/2006, Art. 3º; Resolução CGSN 94/2011';
+    else if(low.includes('estrangeiro'))ans='Artistas estrangeiros podem receber cachê com recursos da Lei Rouanet, desde que haja contrato formal, o serviço seja prestado no Brasil e as retenções sejam aplicadas conforme o tratado internacional (se houver) ou à alíquota de 25% de IRRF (rendimento de não residente). Consulte seu contador para casos específicos.\n\n📎 Ref: RIR/2018, Art. 741; Lei 8.313/91';
+    wrap.innerHTML+=`<div class="msg ma">${ans.replace(/\n/g,'<br>')}</div>`; wrap.scrollTop=wrap.scrollHeight;
+  },600);
+}
+function askQ(q){navigate('ai');document.getElementById('chat-in').value=q;sendChat();}
+
+// ── MODALS ────────────────────────────────────────
+let activeModal='';
+function openNew(){const p=document.querySelector('.ni.active')?.dataset.page;const m={projects:'project',payments:'payment',vendors:'vendor',contracts:'contract'};openModal(m[p]||'project');}
+function openModal(type){
+  activeModal=type;
+  const titles={project:'Novo projeto',payment:'Nova solicitação de pagamento',vendor:'Novo fornecedor','contract-template':'Templates de contrato'};
+  document.getElementById('modal-title').textContent=titles[type]||'Novo';
+  document.getElementById('modal-body').innerHTML=getForm(type);
+  document.getElementById('modal-footer').innerHTML=type==='contract-template'
+    ?'<button class="btn btn-sm" onclick="closeModal()">Fechar</button>'
+    :'<button class="btn btn-sm" onclick="closeModal()">Cancelar</button><button class="btn btn-sm btn-p" onclick="saveModal()">Salvar</button>';
+  document.getElementById('modal').style.display='flex';
+  if(type==='payment')setupTax();
+}
+function closeModal(){document.getElementById('modal').style.display='none';}
+function saveModal(){
+  const acts={
+    project:()=>{const n=document.getElementById('f-name')?.value?.trim();if(!n)return false;DB.projects.push({id:Date.now(),name:n,pronac:document.getElementById('f-pronac')?.value||'—',law:document.getElementById('f-law')?.value||'rouanet',value:parseFloat(document.getElementById('f-value')?.value||0),captado:0,executor:document.getElementById('f-exec')?.value||'',cnpj:'',status:'aprovado',pct:0,approved:new Date().toISOString().slice(0,10),conta:'—'});addAudit('CREATE',`Project "${n}"`);renderProjects();renderDashboard();return true;},
+    payment:()=>{const v=document.getElementById('f-vendor')?.value;const g=parseFloat(document.getElementById('f-gross')?.value||0);if(!g){showToast('Informe o valor','var(--red)');return false;}DB.payments.push({id:Date.now(),vendor:v,proj_id:parseInt(document.getElementById('f-proj')?.value||1),rubrica:document.getElementById('f-rub')?.value||'—',service:document.getElementById('f-service')?.value||'cache_artistico',personType:document.getElementById('f-person')?.value||'pf',taxRegime:document.getElementById('f-regime')?.value||'',gross:g,status:'pending',date:new Date().toISOString().slice(0,10),cnae_ok:true,saldo_ok:true});addAudit('CREATE',`PaymentRequest "${v}"`);renderPayments();renderApprovals();renderDashboard();updateBadge();return true;},
+    vendor:()=>{const n=document.getElementById('f-vname')?.value?.trim();if(!n)return false;DB.vendors.push({id:Date.now(),name:n,type:document.getElementById('f-vtype')?.value||'PF',doc:document.getElementById('f-vdoc')?.value||'',cnae:document.getElementById('f-vcnae')?.value||'—',regime:document.getElementById('f-vregime')?.value||'—',bank:document.getElementById('f-vbank')?.value||'',rfb:'ativo',certs:{}});addAudit('CREATE',`Vendor "${n}"`);renderVendors();return true;},
+  };
+  const ok=acts[activeModal]?.();
+  if(ok){closeModal();showToast('Salvo com sucesso!');}
+}
+
+function getForm(type){
+  if(type==='project')return`<div class="gr" style="gap:10px">
+    <div class="fg"><label>Nome do projeto *</label><input id="f-name" placeholder="Ex: Festival de Música 2027"></div>
+    <div class="gr c2"><div class="fg"><label>PRONAC / Nº do projeto</label><input id="f-pronac" placeholder="225.XXX ou LPG-2026-XXXX"></div>
+    <div class="fg"><label>Lei de incentivo</label><select id="f-law">${LAWS.map(l=>`<option value="${l.id}">${l.name} — ${l.num}</option>`).join('')}</select></div></div>
+    <div class="gr c2"><div class="fg"><label>Valor aprovado (R$)</label><input type="number" id="f-value" placeholder="500000"></div>
+    <div class="fg"><label>Data de aprovação</label><input type="date" id="f-approved"></div></div>
+    <div class="gr c2"><div class="fg"><label>Executor / Proponente</label><input id="f-exec" placeholder="Razão social do proponente"></div>
+    <div class="fg"><label>Conta bancária do projeto</label><input id="f-conta" placeholder="Banco / Ag. / CC"></div></div>
+    <div class="fg"><label>Objeto do projeto</label><textarea id="f-obj" rows="2" placeholder="Descrição resumida..."></textarea></div>
+  </div>`;
+  if(type==='payment')return`<div class="gr" style="gap:10px">
+    <div class="gr c2"><div class="fg"><label>Fornecedor</label><select id="f-vendor">${DB.vendors.map(v=>`<option>${v.name}</option>`).join('')}</select></div>
+    <div class="fg"><label>Projeto</label><select id="f-proj">${DB.projects.map(p=>`<option value="${p.id}">${p.name.substring(0,35)}</option>`).join('')}</select></div></div>
+    <div class="fg"><label>Rubrica</label><select id="f-rub"><option>Produção artística</option><option>Cachê artístico</option><option>Infraestrutura</option><option>Comunicação</option><option>Despesas administrativas</option><option>Retenções e guias</option></select></div>
+    <div class="gr c3"><div class="fg"><label>Tipo de serviço</label><select id="f-service" onchange="setupTax()"><option value="cache_artistico">Cachê artístico</option><option value="servicos_pf">Serviços PF</option><option value="servicos_pj">Serviços PJ</option><option value="equipamento">Equipamentos</option><option value="locacao">Locação</option></select></div>
+    <div class="fg"><label>Pessoa</label><select id="f-person" onchange="setupTax()"><option value="pf">Física (PF)</option><option value="pj">Jurídica (PJ)</option></select></div>
+    <div class="fg"><label>Regime tributário</label><select id="f-regime" onchange="setupTax()"><option value="">—</option><option value="simples_nacional">Simples Nacional</option><option value="lucro_presumido">Lucro Presumido</option><option value="lucro_real">Lucro Real</option></select></div></div>
+    <div class="fg"><label>Valor bruto (R$) *</label><input type="number" id="f-gross" placeholder="Ex: 10000" oninput="setupTax()"></div>
+    <div id="tax-result"></div>
+    <div id="sem-result"></div>
+  </div>`;
+  if(type==='vendor')return`<div class="gr" style="gap:10px">
+    <div class="gr c2"><div class="fg"><label>Nome / Razão social *</label><input id="f-vname" placeholder="Nome completo ou razão social"></div>
+    <div class="fg"><label>Tipo</label><select id="f-vtype"><option>PF</option><option>PJ</option></select></div></div>
+    <div class="gr c2"><div class="fg"><label>CPF / CNPJ</label><input id="f-vdoc" placeholder="000.000.000-00 ou 00.000.000/0001-00"></div>
+    <div class="fg"><label>CNAE principal</label><input id="f-vcnae" placeholder="Ex: 9001-9/01 — Artes cênicas"></div></div>
+    <div class="gr c2"><div class="fg"><label>Regime tributário</label><select id="f-vregime"><option>—</option><option>Simples Nacional</option><option>Lucro Presumido</option><option>Lucro Real</option><option>MEI</option></select></div>
+    <div class="fg"><label>Dados bancários</label><input id="f-vbank" placeholder="Banco / Ag. / Conta"></div></div>
+    <div class="fg"><label>E-mail do fornecedor</label><input type="email" id="f-vemail" placeholder="fornecedor@email.com"></div>
+    <div class="alert al-i" style="margin-top:6px"><i class="ti ti-info-circle"></i> Após salvar, o sistema consultará a Receita Federal e solicitará upload das certidões negativas automaticamente.</div>
+  </div>`;
+  if(type==='contract-template')return`<div class="gr" style="gap:8px">
+    ${['Cachê artístico','Prestação de serviços','Locação de equipamentos','Cessão de direitos autorais','Consultoria técnica','Fornecimento de materiais'].map(t=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:.5px solid var(--border);border-radius:var(--r)"><div><div style="font-size:13px;font-weight:500">${t}</div><div style="font-size:11px;color:var(--text2)">Template com cláusulas obrigatórias da lei</div></div><button class="btn btn-sm" onclick="showToast('Abrindo template...')"><i class="ti ti-edit"></i> Editar</button></div>`).join('')}
+  </div>`;
+  return '';
+}
+
+function setupTax(){
+  const g=parseFloat(document.getElementById('f-gross')?.value||0);
+  const s=document.getElementById('f-service')?.value||'cache_artistico';
+  const pt=document.getElementById('f-person')?.value||'pf';
+  const r=document.getElementById('f-regime')?.value||'';
+  const el=document.getElementById('tax-result');
+  if(!el)return;
+  if(!g){el.innerHTML='';if(document.getElementById('sem-result'))document.getElementById('sem-result').innerHTML='';return;}
+  const t=calcTax(g,s,pt,r); const tot=t.iss+t.ir+t.inss+t.pis;
+  el.innerHTML=`<div class="tax-box"><div style="font-size:11px;font-weight:500;color:var(--ptxt);margin-bottom:6px">Cálculo automático de impostos</div>
+    ${t.iss>0?`<div class="tr"><span>ISS (5%)</span><span style="color:var(--rtxt)">-${fmt(t.iss)}</span></div>`:''}
+    ${t.ir>0?`<div class="tr"><span>IRRF</span><span style="color:var(--rtxt)">-${fmt(t.ir)}</span></div>`:''}
+    ${t.inss>0?`<div class="tr"><span>INSS (11%, cap R$ 908,86)</span><span style="color:var(--rtxt)">-${fmt(t.inss)}</span></div>`:''}
+    ${t.pis>0?`<div class="tr"><span>PIS/COFINS/CSLL (4,65%)</span><span style="color:var(--rtxt)">-${fmt(t.pis)}</span></div>`:''}
+    ${tot===0?`<div style="font-size:12px;color:var(--teal);padding:3px 0">Simples Nacional — sem retenção na fonte</div>`:''}
+    <div class="tr tot"><span>Valor líquido a pagar</span><span style="color:var(--ptxt)">${fmt(t.net)}</span></div>
+  </div>`;
+  const semEl=document.getElementById('sem-result');
+  if(semEl)semEl.innerHTML=`<div style="font-size:11px;font-weight:500;color:var(--text2);margin:10px 0 4px">Painel de validação automática</div>`+buildSemaphore(g,s,pt,r,1,'Produção artística',1);
+}
+
+function viewPayment(id){
+  const p=DB.payments.find(x=>x.id===id); if(!p)return;
+  const t=calcTax(p.gross,p.service,p.personType,p.taxRegime); const tot=t.iss+t.ir+t.inss+t.pis;
+  const proj=DB.projects.find(pr=>pr.id===p.proj_id)||{};
+  document.getElementById('modal-title').textContent='Detalhes da solicitação';
+  document.getElementById('modal-body').innerHTML=`<div class="gr c2" style="gap:10px;margin-bottom:12px">
+    <div><div style="font-size:11px;color:var(--text2)">Fornecedor</div><strong>${p.vendor}</strong></div>
+    <div><div style="font-size:11px;color:var(--text2)">Projeto</div>${proj.name||''}</div>
+    <div><div style="font-size:11px;color:var(--text2)">Rubrica</div>${p.rubrica}</div>
+    <div><div style="font-size:11px;color:var(--text2)">Tipo</div>${p.personType.toUpperCase()} — ${p.service.replace(/_/g,' ')}</div>
+  </div>
+  ${buildSemaphore(p.gross,p.service,p.personType,p.taxRegime,p.proj_id,p.rubrica,1)}
+  <div class="tax-box" style="margin-top:10px">
+    <div class="tr"><span>Valor bruto</span><span>${fmt(p.gross)}</span></div>
+    ${t.iss>0?`<div class="tr"><span>(-) ISS</span><span>-${fmt(t.iss)}</span></div>`:''}
+    ${t.ir>0?`<div class="tr"><span>(-) IRRF</span><span>-${fmt(t.ir)}</span></div>`:''}
+    ${t.inss>0?`<div class="tr"><span>(-) INSS</span><span>-${fmt(t.inss)}</span></div>`:''}
+    ${t.pis>0?`<div class="tr"><span>(-) PIS/COFINS/CSLL</span><span>-${fmt(t.pis)}</span></div>`:''}
+    <div class="tr tot"><span>Líquido a pagar</span><span style="color:var(--ptxt)">${fmt(t.net)}</span></div>
+  </div>`;
+  document.getElementById('modal-footer').innerHTML='<button class="btn btn-sm" onclick="closeModal()">Fechar</button>';
+  document.getElementById('modal').style.display='flex';
+}
+
+function viewVendor(id){
+  const v=DB.vendors.find(x=>x.id===id); if(!v)return;
+  const today=new Date();
+  document.getElementById('modal-title').textContent='Ficha do fornecedor — '+v.name;
+  document.getElementById('modal-body').innerHTML=`<div class="gr c2" style="gap:10px;margin-bottom:12px">
+    <div><div style="font-size:11px;color:var(--text2)">Tipo</div><strong>${v.type}</strong></div>
+    <div><div style="font-size:11px;color:var(--text2)">CPF/CNPJ</div>${v.doc}</div>
+    <div><div style="font-size:11px;color:var(--text2)">CNAE principal</div>${v.cnae}</div>
+    <div><div style="font-size:11px;color:var(--text2)">Regime tributário</div>${v.regime}</div>
+    <div><div style="font-size:11px;color:var(--text2)">Banco</div>${v.bank}</div>
+    <div><div style="font-size:11px;color:var(--text2)">Status RFB</div>${badge(v.rfb)}</div>
+  </div>
+  <div style="font-size:11px;font-weight:500;margin-bottom:8px;color:var(--text2)">CERTIDÕES NEGATIVAS</div>
+  <table style="font-size:12px"><thead><tr><th>Certidão</th><th>Validade</th><th>Status</th></tr></thead><tbody>
+  ${Object.entries(v.certs||{}).map(([k,d])=>`<tr><td>${k.charAt(0).toUpperCase()+k.slice(1)}</td><td>${d}</td><td>${d==='—'?'<span class="st sl">N/A</span>':new Date(d)<today?'<span class="st sr">Vencida ⚠</span>':'<span class="st sg">Válida</span>'}</td></tr>`).join('')}
+  </tbody></table>`;
+  document.getElementById('modal-footer').innerHTML='<button class="btn btn-sm" onclick="closeModal()">Fechar</button><button class="btn btn-sm btn-p" onclick="showToast(\'Solicitando certidões por e-mail...\')">Solicitar atualização</button>';
+  document.getElementById('modal').style.display='flex';
+}
+
+// ── NAVIGATION ────────────────────────────────────
+const TITLES={dashboard:'Dashboard',projects:'Projetos',rubricas:'Rubricas — Orçamento vs. Executado',payments:'Solicitações de Pagamento',approvals:'Aprovações Pendentes',nf:'Notas Fiscais e Guias',omie:'Omie — Conciliação Bancária',vendors:'Fornecedores',contracts:'Contratos Digitais (Clicksign)',ai:'Assistente IA — Leis de Incentivo',laws:'Base Legislativa',docs:'Repositório de Documentos',accountability:'Prestação de Contas',reports:'Relatórios',audit:'Auditoria Imutável',admin:'Administração'};
+const NEW_PAGES=['projects','payments','vendors','contracts'];
+const RENDERS={dashboard:renderDashboard,projects:renderProjects,rubricas:renderRubricas,payments:renderPayments,approvals:renderApprovals,nf:renderNF,omie:renderOmie,vendors:renderVendors,contracts:renderContracts,ai:renderAI,laws:renderLaws,docs:renderDocs,accountability:renderAccountability,audit:renderAudit,admin:renderUsers};
+
+function navigate(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
+  const pg=document.getElementById('page-'+page); if(pg)pg.classList.add('active');
+  const ni=document.querySelector(`[data-page="${page}"]`); if(ni)ni.classList.add('active');
+  document.getElementById('pg-title').textContent=TITLES[page]||page;
+  document.getElementById('new-btn').style.display=NEW_PAGES.includes(page)?'inline-flex':'none';
+  RENDERS[page]?.();
+  document.querySelector('.content').scrollTop=0;
+}
+document.querySelectorAll('.ni').forEach(n=>n.addEventListener('click',()=>navigate(n.dataset.page)));
+
+// ── LOGIN ─────────────────────────────────────────
+function doLogin(){
+  const e=document.getElementById('le').value.trim(); const p=document.getElementById('lp').value.trim();
+  if(!e||!p){showToast('Preencha e-mail e senha','var(--red)');return;}
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app-screen').style.display='flex';
+  const nm=e.split('@')[0].replace('.',' ').replace(/\b\w/g,c=>c.toUpperCase());
+  document.getElementById('u-nm').textContent=nm;
+  document.getElementById('u-av').textContent=initials(nm);
+  renderDashboard();renderProjects();renderPayments();renderApprovals();
+  renderNF();renderOmie();renderVendors();renderContracts();
+  renderAI();renderLaws();renderDocs();renderAccountability();renderAudit();renderUsers();
+}
+
+// ── UTILS ─────────────────────────────────────────
+function addAudit(action,entity){
+  const now=new Date().toISOString().replace('T',' ').slice(0,19);
+  const h=Math.random().toString(36).slice(2,8)+Math.random().toString(36).slice(2,8)+'...';
+  DB.audit.unshift({ts:now,user:'vanessa@criape.com.br',action,entity,ip:'187.34.12.90',hash:h});
+  if(DB.audit.length>50)DB.audit.pop();
+}
+function showToast(msg,bg){const t=document.getElementById('toast');t.textContent=msg;t.style.background=bg||'var(--teal)';t.style.display='block';setTimeout(()=>t.style.display='none',2800);}
+document.getElementById('modal').addEventListener('click',e=>{if(e.target===document.getElementById('modal'))closeModal();});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('login-screen').style.display!=='none')doLogin();});
+</script>
+</body>
+</html>
