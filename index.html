@@ -1419,7 +1419,18 @@ function closeModal(){document.getElementById('modal').style.display='none';}
 function saveModal(){
   const acts={
     project:()=>{const n=document.getElementById('f-name')?.value?.trim();if(!n)return false;DB.projects.push({id:Date.now(),name:n,pronac:document.getElementById('f-pronac')?.value||'—',law:document.getElementById('f-law')?.value||'rouanet',value:parseFloat(document.getElementById('f-value')?.value||0),captado:0,executor:document.getElementById('f-exec')?.value||'',cnpj:'',status:'aprovado',pct:0,approved:new Date().toISOString().slice(0,10),conta:'—'});addAudit('CREATE',`Project "${n}"`);renderProjects();renderDashboard();return true;},
-    payment:()=>{const v=document.getElementById('f-vendor')?.value;const g=parseFloat(document.getElementById('f-gross')?.value||0);if(!g){showToast('Informe o valor','var(--red)');return false;}DB.payments.push({id:Date.now(),vendor:v,proj_id:parseInt(document.getElementById('f-proj')?.value||1),rubrica:document.getElementById('f-rub')?.value||'—',service:document.getElementById('f-service')?.value||'cache_artistico',personType:document.getElementById('f-person')?.value||'pf',taxRegime:document.getElementById('f-regime')?.value||'',gross:g,status:'pending',date:new Date().toISOString().slice(0,10),cnae_ok:true,saldo_ok:true});addAudit('CREATE',`PaymentRequest "${v}"`);renderPayments();renderApprovals();renderDashboard();updateBadge();return true;},
+    payment:()=>{
+      const vendorId=parseInt(document.getElementById('f-vendor-id')?.value||0);
+      const v=document.getElementById('f-vendor')?.value?.trim();
+      if(!vendorId||!v){showToast('Selecione um fornecedor cadastrado primeiro','var(--red)');return false;}
+      const vendor=DB.vendors.find(vv=>vv.id===vendorId);
+      if(vendor?.rfb==='inapto'){showToast('Fornecedor INAPTO na RFB — pagamento bloqueado','var(--red)');return false;}
+      const g=parseFloat(document.getElementById('f-gross')?.value||0);
+      if(!g){showToast('Informe o valor bruto','var(--red)');return false;}
+      DB.payments.push({id:Date.now(),vendor:v,vendor_id:vendorId,proj_id:parseInt(document.getElementById('f-proj')?.value||1),rubrica:document.getElementById('f-rub')?.value||'—',service:document.getElementById('f-service')?.value||'cache_artistico',personType:document.getElementById('f-person')?.value||'pf',taxRegime:document.getElementById('f-regime')?.value||'',gross:g,status:'pending',date:new Date().toISOString().slice(0,10),cnae_ok:vendor?.cnae_ok!==false,saldo_ok:true});
+      addAudit('CREATE',`PaymentRequest "${v}" — ${document.getElementById('f-rub')?.value}`);
+      renderPayments();renderApprovals();renderDashboard();updateBadge();return true;
+    },
     vendor:()=>{const n=document.getElementById('f-vname')?.value?.trim();if(!n)return false;DB.vendors.push({id:Date.now(),name:n,type:document.getElementById('f-vtype')?.value||'PF',doc:document.getElementById('f-vdoc')?.value||'',cnae:document.getElementById('f-vcnae')?.value||'—',regime:document.getElementById('f-vregime')?.value||'—',bank:document.getElementById('f-vbank')?.value||'',rfb:'ativo',certs:{}});addAudit('CREATE',`Vendor "${n}"`);renderVendors();return true;},
   };
   const ok=acts[activeModal]?.();
@@ -1438,15 +1449,30 @@ function getForm(type){
     <div class="fg"><label>Objeto do projeto</label><textarea id="f-obj" rows="2" placeholder="Descrição resumida..."></textarea></div>
   </div>`;
   if(type==='payment')return`<div class="gr" style="gap:10px">
-    <div class="gr c2"><div class="fg"><label>Fornecedor</label><select id="f-vendor">${DB.vendors.map(v=>`<option>${v.name}</option>`).join('')}</select></div>
-    <div class="fg"><label>Projeto</label><select id="f-proj">${DB.projects.map(p=>`<option value="${p.id}">${p.name.substring(0,35)}</option>`).join('')}</select></div></div>
-    <div class="fg"><label>Rubrica</label><select id="f-rub"><option>Produção artística</option><option>Cachê artístico</option><option>Infraestrutura</option><option>Comunicação</option><option>Despesas administrativas</option><option>Retenções e guias</option></select></div>
-    <div class="gr c3"><div class="fg"><label>Tipo de serviço</label><select id="f-service" onchange="setupTax()"><option value="cache_artistico">Cachê artístico</option><option value="servicos_pf">Serviços PF</option><option value="servicos_pj">Serviços PJ</option><option value="equipamento">Equipamentos</option><option value="locacao">Locação</option></select></div>
-    <div class="fg"><label>Pessoa</label><select id="f-person" onchange="setupTax()"><option value="pf">Física (PF)</option><option value="pj">Jurídica (PJ)</option></select></div>
-    <div class="fg"><label>Regime tributário</label><select id="f-regime" onchange="setupTax()"><option value="">—</option><option value="simples_nacional">Simples Nacional</option><option value="lucro_presumido">Lucro Presumido</option><option value="lucro_real">Lucro Real</option></select></div></div>
-    <div class="fg"><label>Valor bruto (R$) *</label><input type="number" id="f-gross" placeholder="Ex: 10000" oninput="setupTax()"></div>
-    <div id="tax-result"></div>
-    <div id="sem-result"></div>
+    <div class="fg">
+      <label>CPF ou CNPJ do fornecedor *</label>
+      <input id="f-vdoc-search" placeholder="000.000.000-00 ou 00.000.000/0001-00" oninput="lookupVendorByDoc(this.value)" autocomplete="off" style="font-size:13px">
+      <div id="f-vendor-status" style="margin-top:6px"></div>
+    </div>
+    <div id="f-vendor-details" style="display:none">
+      <div class="gr c2" style="gap:10px;margin-bottom:0">
+        <div class="fg"><label>Nome do fornecedor</label><input id="f-vendor-name" readonly style="background:var(--bg2);color:var(--text2)"></div>
+        <div class="fg"><label>Projeto</label><select id="f-proj">${DB.projects.map(p=>`<option value="${p.id}">${p.name.substring(0,35)}</option>`).join('')}</select></div>
+      </div>
+      <div class="fg" style="margin-top:10px"><label>Rubrica</label>
+        <select id="f-rub"><option>Produção artística</option><option>Cachê artístico</option><option>Infraestrutura</option><option>Comunicação</option><option>Despesas administrativas</option><option>Retenções e guias</option></select>
+      </div>
+      <div class="gr c3" style="margin-top:10px">
+        <div class="fg"><label>Tipo de serviço</label><select id="f-service" onchange="setupTax()"><option value="cache_artistico">Cachê artístico</option><option value="servicos_pf">Serviços PF</option><option value="servicos_pj">Serviços PJ</option><option value="equipamento">Equipamentos</option><option value="locacao">Locação</option></select></div>
+        <div class="fg"><label>Pessoa</label><select id="f-person" onchange="setupTax()"><option value="pf">Física (PF)</option><option value="pj">Jurídica (PJ)</option></select></div>
+        <div class="fg"><label>Regime tributário</label><select id="f-regime" onchange="setupTax()"><option value="">—</option><option value="simples_nacional">Simples Nacional</option><option value="lucro_presumido">Lucro Presumido</option><option value="lucro_real">Lucro Real</option></select></div>
+      </div>
+      <div class="fg" style="margin-top:10px"><label>Valor bruto (R$) *</label><input type="number" id="f-gross" placeholder="Ex: 10000" oninput="setupTax()"></div>
+      <div id="tax-result"></div>
+      <div id="sem-result"></div>
+    </div>
+    <input type="hidden" id="f-vendor-id">
+    <input type="hidden" id="f-vendor">
   </div>`;
   if(type==='vendor')return`<div class="gr" style="gap:10px">
     <div class="gr c2"><div class="fg"><label>Nome / Razão social *</label><input id="f-vname" placeholder="Nome completo ou razão social"></div>
@@ -1462,6 +1488,93 @@ function getForm(type){
     ${['Cachê artístico','Prestação de serviços','Locação de equipamentos','Cessão de direitos autorais','Consultoria técnica','Fornecimento de materiais'].map(t=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:.5px solid var(--border);border-radius:var(--r)"><div><div style="font-size:13px;font-weight:500">${t}</div><div style="font-size:11px;color:var(--text2)">Template com cláusulas obrigatórias da lei</div></div><button class="btn btn-sm" onclick="showToast('Abrindo template...')"><i class="ti ti-edit"></i> Editar</button></div>`).join('')}
   </div>`;
   return '';
+}
+
+// ── VENDOR LOOKUP ─────────────────────────────────────────────────────────────
+function lookupVendorByDoc(raw){
+  const statusEl=document.getElementById('f-vendor-status');
+  const detailsEl=document.getElementById('f-vendor-details');
+  if(!statusEl||!detailsEl)return;
+
+  // Normalize: keep only digits for comparison
+  const digits=raw.replace(/\D/g,'');
+  if(digits.length<11){
+    statusEl.innerHTML='';
+    detailsEl.style.display='none';
+    document.getElementById('f-vendor-id').value='';
+    document.getElementById('f-vendor').value='';
+    return;
+  }
+
+  // Search vendor by CPF/CNPJ (compare digits only)
+  const vendor=DB.vendors.find(v=>v.doc.replace(/\D/g,'')===digits);
+
+  if(vendor){
+    // ✅ Found — fill fields and show form
+    const rfbOk=vendor.rfb!=='inapto';
+    const rfbBadge=rfbOk
+      ?`<span class="st sg"><i class="ti ti-check"></i> Ativo na RFB</span>`
+      :`<span class="st sr"><i class="ti ti-alert-triangle"></i> INAPTO na RFB — pagamento bloqueado</span>`;
+    statusEl.innerHTML=`
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 11px;background:var(--tbg);border:.5px solid #9FE1CB;border-radius:var(--r)">
+        <i class="ti ti-circle-check" style="color:var(--teal);font-size:16px"></i>
+        <div>
+          <div style="font-size:12px;font-weight:500;color:var(--ttxt)">${vendor.name}</div>
+          <div style="font-size:10px;color:var(--text2)">${vendor.type} · ${vendor.doc} · ${vendor.cnae||'—'} ${rfbBadge}</div>
+        </div>
+      </div>`;
+
+    // Fill hidden + name fields
+    document.getElementById('f-vendor-id').value=vendor.id;
+    document.getElementById('f-vendor').value=vendor.name;
+    document.getElementById('f-vendor-name').value=vendor.name;
+
+    // Auto-select Pessoa based on type
+    const personSel=document.getElementById('f-person');
+    if(personSel)personSel.value=vendor.type==='PJ'?'pj':'pf';
+
+    // Auto-select regime
+    const regimeSel=document.getElementById('f-regime');
+    if(regimeSel&&vendor.regime&&vendor.regime!=='—'){
+      const regimeMap={'Simples Nacional':'simples_nacional','Lucro Presumido':'lucro_presumido','Lucro Real':'lucro_real','MEI':'simples_nacional'};
+      regimeSel.value=regimeMap[vendor.regime]||'';
+    }
+
+    // Auto-select service based on CNAE
+    const serviceSel=document.getElementById('f-service');
+    if(serviceSel&&vendor.cnae){
+      const cnae=vendor.cnae.toLowerCase();
+      if(/artes|cênic|música|dança|teatro|circo/.test(cnae))serviceSel.value='cache_artistico';
+      else if(vendor.type==='PJ')serviceSel.value='servicos_pj';
+      else serviceSel.value='servicos_pf';
+    }
+
+    detailsEl.style.display='block';
+
+    // Block if INAPTO
+    const saveBtn=document.querySelector('#modal-footer .btn-p');
+    if(saveBtn)saveBtn.disabled=!rfbOk;
+    if(!rfbOk)showToast('Fornecedor INAPTO na RFB — pagamento não permitido','var(--red)');
+
+    setupTax();
+  } else if(digits.length>=11){
+    // ❌ Not found
+    statusEl.innerHTML=`
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 11px;background:var(--rbg);border:.5px solid #F7C1C1;border-radius:var(--r)">
+        <i class="ti ti-alert-circle" style="color:var(--red);font-size:16px"></i>
+        <div>
+          <div style="font-size:12px;font-weight:500;color:var(--rtxt)">Fornecedor não cadastrado</div>
+          <div style="font-size:11px;color:var(--text2)">Cadastre este fornecedor antes de solicitar o pagamento.
+            <span style="color:var(--purple);cursor:pointer;text-decoration:underline" onclick="closeModal();navigate('vendors');setTimeout(()=>openModal('vendor'),100)">Cadastrar agora →</span>
+          </div>
+        </div>
+      </div>`;
+    detailsEl.style.display='none';
+    document.getElementById('f-vendor-id').value='';
+    document.getElementById('f-vendor').value='';
+    const saveBtn=document.querySelector('#modal-footer .btn-p');
+    if(saveBtn)saveBtn.disabled=true;
+  }
 }
 
 function setupTax(){
