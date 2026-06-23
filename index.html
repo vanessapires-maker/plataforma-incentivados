@@ -356,9 +356,15 @@ code{font-family:monospace;font-size:10px;background:var(--bg3);padding:1px 4px;
       <select class="btn btn-sm" id="doc-proj-filter" onchange="renderDocs()" style="font-size:11px">
         <option value="">Todos os projetos</option>
       </select>
-      <button class="btn btn-sm btn-p" onclick="showToast('Fazendo upload...')"><i class="ti ti-upload"></i> Upload</button>
-      <button class="btn btn-sm" onclick="showToast('Gerando ZIP...')"><i class="ti ti-download"></i> ZIP</button>
+      <button class="btn btn-sm btn-p" onclick="triggerDocUpload()"><i class="ti ti-upload"></i> Upload</button>
+      <input type="file" id="doc-file-input" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.xml,.zip,.txt" style="display:none" onchange="handleDocUpload(this)">
+      <button class="btn btn-sm" onclick="downloadAllDocs()"><i class="ti ti-download"></i> ZIP</button>
     </div>
+  </div>
+  <div id="doc-dropzone" ondragover="event.preventDefault();this.style.borderColor='var(--purple)'" ondragleave="this.style.borderColor='var(--border)'" ondrop="handleDocDrop(event)" style="border:2px dashed var(--border);border-radius:8px;padding:20px;text-align:center;color:var(--text2);font-size:12px;margin-bottom:12px;cursor:pointer;transition:border-color .2s" onclick="triggerDocUpload()">
+    <i class="ti ti-cloud-upload" style="font-size:28px;display:block;margin-bottom:6px;color:var(--purple)"></i>
+    Arraste arquivos aqui ou <b style="color:var(--purple)">clique para selecionar</b><br>
+    <span style="font-size:10px">PDF, Word, Excel, XML, imagens — tamanho ilimitado</span>
   </div>
   <div id="docs-list"></div>
 </div>
@@ -911,10 +917,81 @@ function renderDocs(){
       ${items.map(d=>`<div class="doc-item">
         <i class="ti ti-file" style="font-size:18px;color:var(--purple);flex-shrink:0"></i>
         <div style="flex:1"><div style="font-size:12px;font-weight:500">${d.nome}</div><div style="font-size:10px;color:var(--text2)">${d.data} • ${d.size}</div></div>
-        <button class="btn btn-sm" onclick="showToast('Baixando...')"><i class="ti ti-download"></i></button>
+        <button class="btn btn-sm btn-ok" onclick="downloadDoc(${d.id})" title="Baixar"><i class="ti ti-download"></i></button>
+        <button class="btn btn-sm btn-no" onclick="deleteDoc(${d.id})" title="Excluir"><i class="ti ti-trash"></i></button>
       </div>`).join('')}
     </div>`;
-  }).join('')||'<div class="empty"><i class="ti ti-folder"></i>Nenhum documento encontrado</div>';
+  }).join('')||'<div class="empty"><i class="ti ti-folder"></i>Nenhum documento. Clique em <b>Upload</b> para adicionar.</div>';
+}
+
+function handleDocDrop(e){
+  e.preventDefault();
+  document.getElementById('doc-dropzone').style.borderColor='var(--border)';
+  const fakeInput={files:e.dataTransfer.files};
+  handleDocUpload(fakeInput);
+}
+
+function triggerDocUpload(){
+  document.getElementById('doc-file-input').click();
+}
+
+function handleDocUpload(input){
+  const files=Array.from(input.files);
+  if(!files.length)return;
+  const pid=parseInt(document.getElementById('doc-proj-filter')?.value||0)||DB.projects[0]?.id||1;
+  const projName=DB.projects.find(p=>p.id===pid)?.name||'Geral';
+  let count=0;
+  files.forEach(file=>{
+    const reader=new FileReader();
+    reader.onload=function(e){
+      const ext=file.name.split('.').pop().toUpperCase();
+      const catMap={PDF:'Comprovantes',DOC:'Contratos',DOCX:'Contratos',XLS:'Planilhas',XLSX:'Planilhas',PNG:'Imagens',JPG:'Imagens',JPEG:'Imagens',XML:'Notas Fiscais',ZIP:'Arquivos',TXT:'Outros'};
+      const cat=catMap[ext]||'Outros';
+      const sizeStr=file.size>1024*1024?`${(file.size/1024/1024).toFixed(1)} MB`:`${(file.size/1024).toFixed(0)} KB`;
+      DB.docs.push({
+        id:Date.now()+Math.random(),
+        proj_id:pid,
+        proj:projName,
+        cat,
+        nome:file.name,
+        data:new Date().toISOString().slice(0,10),
+        size:sizeStr,
+        dataUrl:e.target.result,
+        type:file.type
+      });
+      count++;
+      if(count===files.length){
+        addAudit('UPLOAD',`${count} arquivo(s) carregado(s)`);
+        renderDocs();
+        showToast(`✓ ${count} arquivo(s) carregado(s) com sucesso`,'var(--teal)');
+      }
+    };
+    reader.readAsDataURL(file);
+  });
+  input.value='';
+}
+
+function downloadDoc(id){
+  const doc=DB.docs.find(d=>d.id===id);
+  if(!doc||!doc.dataUrl){showToast('Arquivo não disponível','var(--red)');return;}
+  const a=document.createElement('a');
+  a.href=doc.dataUrl;
+  a.download=doc.nome;
+  a.click();
+}
+
+function deleteDoc(id){
+  DB.docs=DB.docs.filter(d=>d.id!==id);
+  addAudit('DELETE','Documento removido');
+  renderDocs();
+  showToast('Documento removido');
+}
+
+function downloadAllDocs(){
+  const docs=DB.docs.filter(d=>d.dataUrl);
+  if(!docs.length){showToast('Nenhum documento para baixar','var(--red)');return;}
+  showToast(`Baixando ${docs.length} arquivo(s) individualmente...`,'var(--teal)');
+  docs.forEach((doc,i)=>setTimeout(()=>downloadDoc(doc.id),i*300));
 }
 
 function renderLaws(){
