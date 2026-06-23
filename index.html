@@ -422,6 +422,10 @@ code{font-family:monospace;font-size:10px;background:var(--bg3);padding:1px 4px;
 
 <!-- ADMIN -->
 <div class="page" id="page-admin">
+<div class="alert al-w" style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between">
+  <span><i class="ti ti-device-floppy"></i> Os dados são salvos automaticamente no seu navegador. Para limpar tudo e voltar ao demo inicial:</span>
+  <button class="btn btn-sm btn-no" onclick="resetDB()"><i class="ti ti-trash"></i> Resetar dados</button>
+</div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
   <div class="sec">
     <div class="sec-h"><span class="sec-t">Usuários</span><button class="btn btn-sm btn-p"><i class="ti ti-plus"></i> Convidar</button></div>
@@ -1739,6 +1743,7 @@ document.querySelectorAll('.ni').forEach(n=>n.addEventListener('click',()=>navig
 function doLogin(){
   const e=document.getElementById('le').value.trim(); const p=document.getElementById('lp').value.trim();
   if(!e||!p){showToast('Preencha e-mail e senha','var(--red)');return;}
+  loadDB(); // ← carrega dados salvos antes de renderizar
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app-screen').style.display='flex';
   const nm=e.split('@')[0].replace('.',' ').replace(/\b\w/g,c=>c.toUpperCase());
@@ -1749,12 +1754,48 @@ function doLogin(){
   renderAI();renderLaws();renderDocs();renderAccountability();renderAudit();renderUsers();
 }
 
+// ── PERSISTÊNCIA LOCAL ─────────────────────────────────────────────────────────
+const DB_KEY='incentivados_db_v1';
+
+function saveDB(){
+  try{
+    // Don't persist dataUrls (uploaded file contents) — too large for localStorage
+    const toSave={...DB};
+    toSave.docs=DB.docs.map(d=>{const {dataUrl,...rest}=d;return rest;});
+    localStorage.setItem(DB_KEY, JSON.stringify(toSave));
+  }catch(e){
+    // localStorage may be full (e.g. too many docs with dataUrls)
+    console.warn('saveDB error:',e.message);
+  }
+}
+
+function loadDB(){
+  try{
+    const raw=localStorage.getItem(DB_KEY);
+    if(!raw)return;
+    const saved=JSON.parse(raw);
+    // Merge saved data into DB, keeping demo structure as fallback for missing keys
+    Object.keys(saved).forEach(k=>{
+      if(Array.isArray(saved[k]))DB[k]=saved[k];
+    });
+  }catch(e){
+    console.warn('loadDB error:',e.message);
+  }
+}
+
+function resetDB(){
+  if(!confirm('Tem certeza? Isso apagará todos os dados cadastrados e voltará ao demo inicial.'))return;
+  localStorage.removeItem(DB_KEY);
+  location.reload();
+}
+
 // ── UTILS ─────────────────────────────────────────
 function addAudit(action,entity){
   const now=new Date().toISOString().replace('T',' ').slice(0,19);
   const h=Math.random().toString(36).slice(2,8)+Math.random().toString(36).slice(2,8)+'...';
   DB.audit.unshift({ts:now,user:'vanessa@criape.com.br',action,entity,ip:'187.34.12.90',hash:h});
   if(DB.audit.length>50)DB.audit.pop();
+  saveDB(); // ← persiste automaticamente após cada ação
 }
 function showToast(msg,bg){const t=document.getElementById('toast');t.textContent=msg;t.style.background=bg||'var(--teal)';t.style.display='block';setTimeout(()=>t.style.display='none',2800);}
 document.getElementById('modal').addEventListener('click',e=>{if(e.target===document.getElementById('modal'))closeModal();});
