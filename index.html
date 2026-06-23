@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{--bg:#fff;--bg2:#f7f7f5;--bg3:#f0eeea;--text:#1a1a1a;--text2:#666;--text3:#999;--border:rgba(0,0,0,.12);--border2:rgba(0,0,0,.22);--purple:#5340c7;--pbg:#EEEDFE;--ptxt:#3C3489;--teal:#1D9E75;--tbg:#E1F5EE;--ttxt:#085041;--amber:#EF9F27;--abg:#FAEEDA;--atxt:#633806;--red:#E24B4A;--rbg:#FCEBEB;--rtxt:#A32D2D;--bluebg:#E6F1FB;--bluetxt:#185FA5;--r:8px;--rl:12px}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -224,8 +225,8 @@ code{font-family:monospace;font-size:10px;background:var(--bg3);padding:1px 4px;
   <select id="rub-proj" class="btn" style="font-size:12px;padding:6px 10px" onchange="renderRubricas()">
     <option value="">— Selecione o projeto —</option>
   </select>
-  <button class="btn btn-sm btn-p" onclick="triggerPdfRubricas()" title="Importar rubricas lendo o PDF do projeto aprovado"><i class="ti ti-file-type-pdf"></i> Importar do PDF</button>
-  <input type="file" id="rub-pdf-input" accept=".pdf" style="display:none" onchange="handlePdfRubricas(this)">
+  <button class="btn btn-sm btn-p" onclick="triggerPdfRubricas()" title="Importar rubricas lendo PDF ou Excel do projeto aprovado"><i class="ti ti-file-import"></i> Importar PDF / Excel</button>
+  <input type="file" id="rub-pdf-input" accept=".pdf,.xlsx,.xls,.ods,.csv" style="display:none" onchange="handlePdfRubricas(this)">
   <span id="rub-pdf-status" style="font-size:11px;color:var(--text2)"></span>
 </div>
 <div id="rub-content"></div>
@@ -725,10 +726,32 @@ async function handlePdfRubricas(input){
   if(!file)return;
   input.value='';
   const status=document.getElementById('rub-pdf-status');
-  status.textContent='⏳ Lendo PDF...';
+  const ext=file.name.split('.').pop().toLowerCase();
+  const isExcel=['xlsx','xls','ods','csv'].includes(ext);
 
+  if(isExcel){
+    status.textContent='⏳ Lendo planilha...';
+    try{
+      if(!window.XLSX){status.textContent='❌ SheetJS não carregado. Recarregue a página.';return;}
+      const arrayBuffer=await file.arrayBuffer();
+      const workbook=XLSX.read(arrayBuffer,{type:'array'});
+      const items=extractRubricasFromExcel(workbook,file.name);
+      status.textContent='';
+      if(!items.length){
+        showToast('Nenhuma rubrica encontrada na planilha. Verifique se há colunas de descrição e valor.','var(--amber)');
+        return;
+      }
+      showPdfPreviewModal(items);
+    }catch(e){
+      status.textContent='';
+      showToast('Erro ao ler planilha: '+e.message,'var(--red)');
+    }
+    return;
+  }
+
+  // PDF path
+  status.textContent='⏳ Lendo PDF...';
   try{
-    // Load PDF.js if not yet loaded
     if(!window.pdfjsLib){
       status.textContent='❌ PDF.js não carregado. Tente recarregar a página.';
       return;
@@ -755,6 +778,77 @@ async function handlePdfRubricas(input){
     status.textContent='';
     showToast('Erro ao ler PDF: '+e.message,'var(--red)');
   }
+}
+
+function extractRubricasFromExcel(workbook, filename){
+  const items=[];
+  const seen=new Set();
+  const ignoreWords=/total|subtotal|soma|desconto|taxa|imposto|iss|ir\b|inss|pis|cofins|csll|bruto|líquido|captado|saldo|aprovado|executado|contratado|receita|despesa|resultado|orçamento\s*total|rubrica|descrição|valor|item|grupo|categoria/i;
+
+  function parseBR(v){
+    if(typeof v==='number')return v;
+    if(!v)return 0;
+    const s=String(v).replace(/[^\d,\.]/g,'').replace(/\.(?=\d{3})/g,'').replace(',','.');
+    return parseFloat(s)||0;
+  }
+
+  // Try every sheet
+  for(const sheetName of workbook.SheetNames){
+    const sheet=workbook.Sheets[sheetName];
+    const rows=XLSX.utils.sheet_to_json(sheet,{header:1,defval:''});
+    if(!rows.length)continue;
+
+    // Detect header row: find row with "descrição/rubrica" and "valor/aprovado" columns
+    let descrCol=-1, valorCol=-1, grupoCol=-1;
+    let headerRow=-1;
+    for(let r=0;r<Math.min(rows.length,10);r++){
+      const row=rows[r].map(c=>String(c).toLowerCase().trim());
+      const dIdx=row.findIndex(c=>/descri|rubric|item|nome/.test(c));
+      const vIdx=row.findIndex(c=>/valor|aprovado|orcamento|orçamento|total|budget/.test(c));
+      if(dIdx>=0&&vIdx>=0){descrCol=dIdx;valorCol=vIdx;headerRow=r;
+        const gIdx=row.findIndex(c=>/grupo|categoria|tipo/.test(c));
+        if(gIdx>=0)grupoCol=gIdx;
+        break;
+      }
+    }
+
+    if(descrCol>=0&&valorCol>=0){
+      // Structured: read from headerRow+1
+      for(let r=headerRow+1;r<rows.length;r++){
+        const row=rows[r];
+        const nome=String(row[descrCol]||'').trim();
+        const valor=parseBR(row[valorCol]);
+        const grupo=grupoCol>=0?String(row[grupoCol]||'').trim():'';
+        if(!nome||valor<100||ignoreWords.test(nome)||seen.has(nome.toLowerCase()))continue;
+        seen.add(nome.toLowerCase());
+        items.push({rubrica:nome,aprovado:valor,grupo:grupo||guessGrupo(nome)});
+      }
+    } else {
+      // Unstructured: scan every cell pair (text + nearby number)
+      for(let r=0;r<rows.length;r++){
+        const row=rows[r];
+        for(let c=0;c<row.length;c++){
+          const cell=row[c];
+          if(typeof cell==='string'&&cell.length>4&&!ignoreWords.test(cell)){
+            // Look for a number in same row or adjacent cell
+            for(let nc=c+1;nc<Math.min(c+5,row.length);nc++){
+              const val=parseBR(row[nc]);
+              if(val>=100){
+                const nome=cell.trim().replace(/^\d+[\.\-\)]\s*/,'');
+                if(!seen.has(nome.toLowerCase())&&nome.length>4){
+                  seen.add(nome.toLowerCase());
+                  items.push({rubrica:nome,aprovado:val,grupo:guessGrupo(nome)});
+                }
+                break;
+              }
+            }
+          }
+        }
+      }
+    }
+    if(items.length>=3)break; // first sheet with data wins
+  }
+  return items.slice(0,40);
 }
 
 function extractRubricasFromText(text){
