@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Plataforma Incentivados — Gestão de Projetos Culturais</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
 <style>
 :root{--bg:#fff;--bg2:#f7f7f5;--bg3:#f0eeea;--text:#1a1a1a;--text2:#666;--text3:#999;--border:rgba(0,0,0,.12);--border2:rgba(0,0,0,.22);--purple:#5340c7;--pbg:#EEEDFE;--ptxt:#3C3489;--teal:#1D9E75;--tbg:#E1F5EE;--ttxt:#085041;--amber:#EF9F27;--abg:#FAEEDA;--atxt:#633806;--red:#E24B4A;--rbg:#FCEBEB;--rtxt:#A32D2D;--bluebg:#E6F1FB;--bluetxt:#185FA5;--r:8px;--rl:12px}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -218,10 +220,13 @@ code{font-family:monospace;font-size:10px;background:var(--bg3);padding:1px 4px;
 <!-- RUBRICAS -->
 <div class="page" id="page-rubricas">
 <div class="alert al-i"><i class="ti ti-info-circle"></i> Selecione um projeto para ver o comparativo orçamento aprovado × executado em tempo real.</div>
-<div class="sec-h" style="margin-bottom:12px;padding:0">
+<div class="sec-h" style="margin-bottom:12px;padding:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
   <select id="rub-proj" class="btn" style="font-size:12px;padding:6px 10px" onchange="renderRubricas()">
     <option value="">— Selecione o projeto —</option>
   </select>
+  <button class="btn btn-sm btn-p" onclick="triggerPdfRubricas()" title="Importar rubricas lendo o PDF do projeto aprovado"><i class="ti ti-file-type-pdf"></i> Importar do PDF</button>
+  <input type="file" id="rub-pdf-input" accept=".pdf" style="display:none" onchange="handlePdfRubricas(this)">
+  <span id="rub-pdf-status" style="font-size:11px;color:var(--text2)"></span>
 </div>
 <div id="rub-content"></div>
 </div>
@@ -706,6 +711,231 @@ function renderProjects(){
     el.innerHTML='<option value="">— Selecione —</option>'+DB.projects.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
     if(cur)el.value=cur;
   });
+}
+
+// ── PDF IMPORT — RUBRICAS ────────────────────────────────────────────────────
+function triggerPdfRubricas(){
+  const pid=parseInt(document.getElementById('rub-proj')?.value||0);
+  if(!pid){showToast('Selecione primeiro o projeto','var(--amber)');return;}
+  document.getElementById('rub-pdf-input').click();
+}
+
+async function handlePdfRubricas(input){
+  const file=input.files[0];
+  if(!file)return;
+  input.value='';
+  const status=document.getElementById('rub-pdf-status');
+  status.textContent='⏳ Lendo PDF...';
+
+  try{
+    // Load PDF.js if not yet loaded
+    if(!window.pdfjsLib){
+      status.textContent='❌ PDF.js não carregado. Tente recarregar a página.';
+      return;
+    }
+    const arrayBuffer=await file.arrayBuffer();
+    const pdf=await pdfjsLib.getDocument({data:arrayBuffer}).promise;
+    let fullText='';
+    for(let i=1;i<=pdf.numPages;i++){
+      const page=await pdf.getPage(i);
+      const content=await page.getTextContent();
+      fullText+=content.items.map(it=>it.str).join(' ')+'\n';
+    }
+    status.textContent='⏳ Extraindo rubricas...';
+    const items=extractRubricasFromText(fullText);
+    if(!items.length){
+      status.textContent='';
+      showToast('Nenhuma rubrica encontrada. Tente um PDF com plano de trabalho.','var(--amber)');
+      showPdfRawModal(fullText);
+      return;
+    }
+    status.textContent='';
+    showPdfPreviewModal(items);
+  }catch(e){
+    status.textContent='';
+    showToast('Erro ao ler PDF: '+e.message,'var(--red)');
+  }
+}
+
+function extractRubricasFromText(text){
+  const items=[];
+  // Normalize text: remove extra spaces, fix common OCR artifacts
+  const t=text.replace(/\s+/g,' ').replace(/R\s*\$/g,'R$').replace(/\.\s(?=\d{3})/g,'.');
+
+  // Patterns for common Brazilian incentive law document formats
+  const patterns=[
+    // "1. Produção artística ................. R$ 450.000,00"
+    /(\d+[\.\d]*)\s*[–\-\.]+\s*([A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇ][^\n\r]{5,60}?)\s*\.{2,}\s*R\$\s*([\d\.]+,\d{2})/g,
+    // "Rubrica: Cachês artísticos / Valor: R$ 150.000,00"
+    /[Rr]ubrica[:\s]+([A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇ][^/\n\r]{4,60}?)[\s/]+[Vv]alor[:\s]+R\$\s*([\d\.]+,\d{2})/g,
+    // "PRODUÇÃO ARTÍSTICA R$ 450.000,00" (all caps header style)
+    /\b([A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇ][A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇ\s]{4,50})\s+R\$\s*([\d\.]+,\d{2})/g,
+    // "Cachês Artísticos.....150.000,00" or "150.000,00"
+    /([A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇ][a-záéíóúâêîôûãõç\s]{4,60}?)\s*\.{2,}\s*([\d\.]+,\d{2})/g,
+    // Table line: word(s) followed by amount on same line
+    /^([A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇ][^\t\n\r]{4,60}?)\s{2,}([\d\.]+,\d{2})\s*$/gm,
+  ];
+
+  const seen=new Set();
+  const ignoreWords=/total|subtotal|valor\s*total|soma|desconto|taxa|imposto|iss|ir\b|inss|pis|cofins|csll|bruto|líquido|captado|saldo|aprovado|executado|contratado|receita|despesa|resultado|orçamento\s*total/i;
+
+  // Helper: parse Brazilian number
+  function parseBR(s){return parseFloat(s.replace(/\./g,'').replace(',','.'))||0;}
+
+  // Try each pattern
+  for(const pat of patterns){
+    pat.lastIndex=0;
+    let m;
+    while((m=pat.exec(t))!==null){
+      let nome, valor;
+      if(m.length===4){nome=m[2].trim();valor=parseBR(m[3]);}
+      else{nome=m[1].trim();valor=parseBR(m[2]);}
+      if(!nome||valor<100)continue;
+      if(ignoreWords.test(nome))continue;
+      if(nome.length<4||nome.length>80)continue;
+      // Remove trailing dots and noise
+      nome=nome.replace(/[\.…\s]+$/, '').trim();
+      if(seen.has(nome.toLowerCase()))continue;
+      seen.add(nome.toLowerCase());
+      // Guess grupo from common categories
+      const grupo=guessGrupo(nome);
+      items.push({rubrica:nome,aprovado:valor,grupo});
+    }
+    if(items.length>=3)break; // stop at first pattern that yields results
+  }
+
+  // If still nothing, try a looser pass: find money amounts preceded by text
+  if(!items.length){
+    const loose=/([A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇ][^\n\r]{5,70}?)\s+R\$\s*([\d\.]+,\d{2})/g;
+    loose.lastIndex=0;
+    let m;
+    while((m=loose.exec(t))!==null){
+      const nome=m[1].trim().replace(/[\.…\s]+$/,'');
+      const valor=parseBR(m[2]);
+      if(!nome||valor<100||ignoreWords.test(nome)||seen.has(nome.toLowerCase()))continue;
+      seen.add(nome.toLowerCase());
+      items.push({rubrica:nome,aprovado:valor,grupo:guessGrupo(nome)});
+    }
+  }
+
+  return items.slice(0,40); // cap at 40 items
+}
+
+function guessGrupo(nome){
+  const n=nome.toLowerCase();
+  if(/cachê|artista|elenco|músic|ator|atriz|bailarim|interpret/.test(n))return'Artístico';
+  if(/produção|direção|coordenação|captação/.test(n))return'Produção';
+  if(/equipamento|som|luz|audiovisual|câmera|cenário|figurino|maquiagem/.test(n))return'Técnico';
+  if(/divulgação|marketing|comunicação|assessoria|imprensa|publicidade|mídia/.test(n))return'Comunicação';
+  if(/administração|admin|contabilidade|jurídic|escritório/.test(n))return'Administração';
+  if(/transporte|viagem|hospedagem|alimentação|diária/.test(n))return'Logística';
+  if(/espaço|aluguel|locação|infraestrutura|montagem|desmontagem/.test(n))return'Infraestrutura';
+  if(/impressão|gráfica|material|insumo/.test(n))return'Materiais';
+  return'Geral';
+}
+
+function showPdfPreviewModal(items){
+  const pid=parseInt(document.getElementById('rub-proj')?.value||0);
+  const proj=DB.projects.find(p=>p.id===pid);
+  const total=items.reduce((s,i)=>s+i.aprovado,0);
+
+  const html=`
+  <div class="modal-ov" id="pdf-preview-modal" onclick="if(event.target===this)closePdfPreview()">
+  <div class="modal" style="width:700px;max-width:95vw">
+    <div class="mh">
+      <h3><i class="ti ti-file-type-pdf" style="color:var(--red)"></i> Rubricas extraídas do PDF — ${proj?.name||''}</h3>
+      <button class="btn btn-sm" onclick="closePdfPreview()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="mb" style="padding:14px">
+      <div class="alert al-s" style="margin-bottom:12px"><i class="ti ti-check"></i> <strong>${items.length} rubricas encontradas</strong> — total R$ ${items.reduce((s,i)=>s+i.aprovado,0).toLocaleString('pt-BR',{minimumFractionDigits:2})}. Revise os nomes e valores antes de confirmar.</div>
+      <table style="font-size:12px">
+        <thead><tr><th>Rubrica</th><th>Grupo</th><th>Valor aprovado</th><th></th></tr></thead>
+        <tbody id="pdf-items-tbody">
+          ${items.map((it,idx)=>`
+          <tr id="pdf-row-${idx}">
+            <td><input class="fg" style="margin:0;width:100%" value="${it.rubrica.replace(/"/g,'&quot;')}" id="pdf-nome-${idx}" onchange="pdfItems[${idx}].rubrica=this.value"></td>
+            <td>
+              <select style="padding:4px 6px;border:.5px solid var(--border2);border-radius:var(--r);font-size:11px;font-family:inherit" onchange="pdfItems[${idx}].grupo=this.value">
+                ${['Artístico','Produção','Técnico','Comunicação','Administração','Logística','Infraestrutura','Materiais','Geral'].map(g=>`<option${g===it.grupo?' selected':''}>${g}</option>`).join('')}
+              </select>
+            </td>
+            <td><input type="text" style="padding:4px 6px;border:.5px solid var(--border2);border-radius:var(--r);font-size:12px;width:130px;font-family:inherit" value="${it.aprovado.toLocaleString('pt-BR',{minimumFractionDigits:2})}" id="pdf-val-${idx}" onchange="pdfItems[${idx}].aprovado=parseBRVal(this.value)"></td>
+            <td><button class="btn btn-sm btn-no" onclick="removePdfItem(${idx})" title="Remover"><i class="ti ti-trash"></i></button></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div class="mf">
+      <button class="btn btn-sm" onclick="closePdfPreview()">Cancelar</button>
+      <button class="btn btn-sm btn-p" onclick="confirmPdfImport()"><i class="ti ti-check"></i> Criar ${items.length} rubricas</button>
+    </div>
+  </div></div>`;
+
+  window.pdfItems=[...items];
+  const wrap=document.createElement('div');
+  wrap.id='pdf-modal-wrap';
+  wrap.innerHTML=html;
+  document.body.appendChild(wrap);
+}
+
+function showPdfRawModal(text){
+  // Show extracted text so user can check what was read
+  const preview=text.substring(0,2000);
+  const html=`
+  <div class="modal-ov" id="pdf-preview-modal" onclick="if(event.target===this)closePdfPreview()">
+  <div class="modal" style="width:640px;max-width:95vw">
+    <div class="mh"><h3><i class="ti ti-file-text"></i> Texto extraído do PDF</h3><button class="btn btn-sm" onclick="closePdfPreview()"><i class="ti ti-x"></i></button></div>
+    <div class="mb">
+      <div class="alert al-w"><i class="ti ti-alert-triangle"></i> Não consegui identificar rubricas automaticamente. Veja abaixo o texto lido do PDF. O documento pode ter um formato diferente ou ser um PDF de imagem (escaneado).</div>
+      <pre style="font-size:11px;background:var(--bg2);padding:12px;border-radius:6px;overflow:auto;max-height:300px;white-space:pre-wrap">${preview.replace(/</g,'&lt;')}${text.length>2000?'\n…(truncado)':''}</pre>
+    </div>
+    <div class="mf"><button class="btn btn-sm btn-p" onclick="closePdfPreview()">Fechar</button></div>
+  </div></div>`;
+  const wrap=document.createElement('div');
+  wrap.id='pdf-modal-wrap';
+  wrap.innerHTML=html;
+  document.body.appendChild(wrap);
+}
+
+function closePdfPreview(){
+  const el=document.getElementById('pdf-modal-wrap');
+  if(el)el.remove();
+}
+
+function removePdfItem(idx){
+  const row=document.getElementById('pdf-row-'+idx);
+  if(row)row.remove();
+  window.pdfItems[idx]=null;
+}
+
+function parseBRVal(s){
+  return parseFloat(s.replace(/\./g,'').replace(',','.'))||0;
+}
+
+function confirmPdfImport(){
+  const pid=parseInt(document.getElementById('rub-proj')?.value||0);
+  if(!pid){showToast('Selecione um projeto','var(--amber)');return;}
+  const validItems=(window.pdfItems||[]).filter(Boolean).filter(it=>it.rubrica&&it.aprovado>0);
+  if(!validItems.length){showToast('Nenhum item válido','var(--amber)');return;}
+  validItems.forEach(it=>{
+    // Don't duplicate if same rubrica name already exists for this project
+    const exists=DB.rubricas.find(r=>r.proj_id===pid&&r.rubrica.toLowerCase()===it.rubrica.toLowerCase());
+    if(!exists){
+      DB.rubricas.push({
+        id:Date.now()+Math.random(),
+        proj_id:pid,
+        grupo:it.grupo||'Geral',
+        rubrica:it.rubrica,
+        aprovado:it.aprovado,
+        contratado:0,
+        pago:0
+      });
+    }
+  });
+  addAudit('IMPORT',`${validItems.length} rubrica(s) importadas do PDF`);
+  closePdfPreview();
+  renderRubricas();
+  showToast(`✓ ${validItems.length} rubricas criadas com sucesso`,'var(--teal)');
 }
 
 function renderRubricas(){
