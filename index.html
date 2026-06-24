@@ -132,7 +132,7 @@ code{font-family:monospace;font-size:10px;background:var(--bg3);padding:1px 4px;
     <div class="lc-logo"><h1>🎭 Incentivados</h1><p>Plataforma de Gestão de Projetos Culturais</p></div>
     <div class="fg" style="margin-bottom:10px"><label>E-mail</label><input type="email" id="le" value="vanessa@criape.com.br"></div>
     <div class="fg" style="margin-bottom:18px"><label>Senha</label><input type="password" id="lp" value="••••••••"></div>
-    <button class="btn btn-p" style="width:100%;padding:9px" onclick="doLogin()">Entrar na plataforma</button>
+    <button class="btn btn-p" id="login-btn" style="width:100%;padding:9px" onclick="doLogin()">Entrar na plataforma</button>
     <div style="text-align:center;margin-top:12px;font-size:11px;color:var(--text2)">Demo: qualquer e-mail/senha funciona</div>
   </div>
 </div>
@@ -1740,10 +1740,13 @@ function navigate(page){
 document.querySelectorAll('.ni').forEach(n=>n.addEventListener('click',()=>navigate(n.dataset.page)));
 
 // ── LOGIN ─────────────────────────────────────────
-function doLogin(){
+async function doLogin(){
   const e=document.getElementById('le').value.trim(); const p=document.getElementById('lp').value.trim();
   if(!e||!p){showToast('Preencha e-mail e senha','var(--red)');return;}
-  loadDB(); // ← carrega dados salvos antes de renderizar
+  const btn=document.getElementById('login-btn');
+  if(btn){btn.disabled=true;btn.textContent='Carregando...';}
+  await loadDB();
+  if(btn){btn.disabled=false;btn.textContent='Entrar na plataforma';}
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app-screen').style.display='flex';
   const nm=e.split('@')[0].replace('.',' ').replace(/\b\w/g,c=>c.toUpperCase());
@@ -1754,37 +1757,66 @@ function doLogin(){
   renderAI();renderLaws();renderDocs();renderAccountability();renderAudit();renderUsers();
 }
 
-// ── PERSISTÊNCIA LOCAL ─────────────────────────────────────────────────────────
-const DB_KEY='incentivados_db_v1';
+// ── PERSISTÊNCIA SUPABASE ─────────────────────────────────────────────────────────
+const SB_URL='https://koxqrmdblupthtzrizhp.supabase.co';
+const SB_KEY='sb_publishable_Mqda6TpzFpNIjP31TNj7Lw_Gy21d8TZ';
+const SB_ID='criape_v1';
+const DB_KEY='incentivados_db_v1'; // fallback localStorage
 
-function saveDB(){
+async function saveDB(){
   try{
-    // Don't persist dataUrls (uploaded file contents) — too large for localStorage
     const toSave={...DB};
     toSave.docs=DB.docs.map(d=>{const {dataUrl,...rest}=d;return rest;});
-    localStorage.setItem(DB_KEY, JSON.stringify(toSave));
+    const r=await fetch(`${SB_URL}/rest/v1/app_data`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Prefer':'resolution=merge-duplicates,return=minimal'},
+      body:JSON.stringify({id:SB_ID,data:toSave,updated_at:new Date().toISOString()})
+    });
+    if(!r.ok)throw new Error(await r.text());
+    try{localStorage.setItem(DB_KEY,JSON.stringify(toSave));}catch(e2){}
   }catch(e){
-    // localStorage may be full (e.g. too many docs with dataUrls)
-    console.warn('saveDB error:',e.message);
+    console.warn('saveDB (Supabase) error:',e.message);
+    try{
+      const toSave={...DB};
+      toSave.docs=DB.docs.map(d=>{const {dataUrl,...rest}=d;return rest;});
+      localStorage.setItem(DB_KEY,JSON.stringify(toSave));
+    }catch(e2){console.warn('saveDB (localStorage) error:',e2.message);}
   }
 }
 
-function loadDB(){
+async function loadDB(){
+  try{
+    const r=await fetch(`${SB_URL}/rest/v1/app_data?id=eq.${SB_ID}&select=data`,{
+      headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`}
+    });
+    if(!r.ok)throw new Error(await r.text());
+    const rows=await r.json();
+    if(!rows.length){_loadFromLocalStorage();return;}
+    const saved=rows[0].data;
+    Object.keys(saved).forEach(k=>{if(Array.isArray(saved[k]))DB[k]=saved[k];});
+  }catch(e){
+    console.warn('loadDB (Supabase) error:',e.message,'. Usando localStorage...');
+    _loadFromLocalStorage();
+  }
+}
+
+function _loadFromLocalStorage(){
   try{
     const raw=localStorage.getItem(DB_KEY);
     if(!raw)return;
     const saved=JSON.parse(raw);
-    // Merge saved data into DB, keeping demo structure as fallback for missing keys
-    Object.keys(saved).forEach(k=>{
-      if(Array.isArray(saved[k]))DB[k]=saved[k];
-    });
-  }catch(e){
-    console.warn('loadDB error:',e.message);
-  }
+    Object.keys(saved).forEach(k=>{if(Array.isArray(saved[k]))DB[k]=saved[k];});
+  }catch(e){console.warn('loadDB (localStorage) error:',e.message);}
 }
 
-function resetDB(){
+async function resetDB(){
   if(!confirm('Tem certeza? Isso apagará todos os dados cadastrados e voltará ao demo inicial.'))return;
+  try{
+    await fetch(`${SB_URL}/rest/v1/app_data?id=eq.${SB_ID}`,{
+      method:'DELETE',
+      headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`}
+    });
+  }catch(e){console.warn('resetDB Supabase error:',e.message);}
   localStorage.removeItem(DB_KEY);
   location.reload();
 }
@@ -1795,7 +1827,7 @@ function addAudit(action,entity){
   const h=Math.random().toString(36).slice(2,8)+Math.random().toString(36).slice(2,8)+'...';
   DB.audit.unshift({ts:now,user:'vanessa@criape.com.br',action,entity,ip:'187.34.12.90',hash:h});
   if(DB.audit.length>50)DB.audit.pop();
-  saveDB(); // ← persiste automaticamente após cada ação
+  saveDB(); // ← persiste automaticamente no Supabase (async, fire-and-forget)
 }
 function showToast(msg,bg){const t=document.getElementById('toast');t.textContent=msg;t.style.background=bg||'var(--teal)';t.style.display='block';setTimeout(()=>t.style.display='none',2800);}
 document.getElementById('modal').addEventListener('click',e=>{if(e.target===document.getElementById('modal'))closeModal();});
