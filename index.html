@@ -226,6 +226,7 @@ code{font-family:monospace;font-size:10px;background:var(--bg3);padding:1px 4px;
     <option value="">— Selecione o projeto —</option>
   </select>
   <button class="btn btn-sm btn-p" onclick="triggerPdfRubricas()" title="Importar rubricas lendo PDF ou Excel do projeto aprovado"><i class="ti ti-file-import"></i> Importar PDF / Excel</button>
+  <button class="btn btn-sm btn-ok" onclick="openRubricaModal(null)" title="Adicionar rubrica manualmente"><i class="ti ti-plus"></i> Nova Rubrica</button>
   <input type="file" id="rub-pdf-input" accept=".pdf,.xlsx,.xls,.ods,.csv" style="display:none" onchange="handlePdfRubricas(this)">
   <span id="rub-pdf-status" style="font-size:11px;color:var(--text2)"></span>
 </div>
@@ -1055,10 +1056,11 @@ function renderRubricas(){
   </div>
   <div class="sec">
     <div class="sec-h"><span class="sec-t">Comparativo por rubrica — ${proj?.name}</span><span class="tag">${law.name}</span></div>
-    <table><thead><tr><th>Grupo</th><th>Rubrica</th><th>Aprovado</th><th>Contratado</th><th>Solicitado</th><th>Pago</th><th>Saldo</th><th>% Exec.</th><th>Status</th></tr></thead>
+    <table><thead><tr><th>Grupo</th><th>Rubrica</th><th>Aprovado</th><th>Contratado</th><th>Solicitado</th><th>Pago</th><th>Saldo</th><th>% Exec.</th><th>Status</th><th></th></tr></thead>
     <tbody>${rubs.map(r=>{
       const saldo=r.aprovado-r.pago; const p=pct(r.pago,r.aprovado);
       const cls=p>=100?'sr':p>=80?'sa':'sg';
+      const rid=r.id||r.rubrica;
       return `<tr>
         <td style="font-size:11px;color:var(--text2)">${r.grupo}</td>
         <td><strong>${r.rubrica}</strong></td>
@@ -1069,9 +1071,99 @@ function renderRubricas(){
         <td style="color:${saldo<0?'var(--red)':'var(--teal)'}">${fmt(saldo)}</td>
         <td>${pbar_el(r.pago,r.aprovado)}</td>
         <td><span class="st ${cls}">${p>=100?'Esgotado':p>=80?'Atenção':'OK'}</span></td>
+        <td style="display:flex;gap:4px;white-space:nowrap">
+          <button class="btn btn-sm" title="Editar rubrica" onclick="openRubricaModal(${JSON.stringify(rid)})"><i class="ti ti-pencil"></i></button>
+          <button class="btn btn-sm btn-no" title="Excluir rubrica" onclick="deleteRubrica(${JSON.stringify(rid)})"><i class="ti ti-trash"></i></button>
+        </td>
       </tr>`;
     }).join('')}</tbody></table>
   </div>`;
+}
+
+// ── RUBRICA ADD / EDIT / DELETE ────────────────────────────────────────────
+const GRUPOS=['Produção','Cachê','Infraestrutura','Comunicação','Admin','Impostos','Geral'];
+
+function openRubricaModal(rid){
+  const pid=parseInt(document.getElementById('rub-proj')?.value||0);
+  if(!pid){showToast('Selecione primeiro o projeto','var(--amber)');return;}
+  const proj=DB.projects.find(p=>p.id===pid)||{};
+  let rub=null;
+  if(rid!==null&&rid!==undefined){
+    rub=DB.rubricas.find(r=>r.proj_id===pid&&(r.id===rid||r.rubrica===rid));
+  }
+  const isEdit=!!rub;
+  const grupoOpts=GRUPOS.map(g=>`<option value="${g}"${rub&&rub.grupo===g?' selected':''}>${g}</option>`).join('');
+  document.getElementById('modal').innerHTML=`
+  <div class="modal">
+    <div class="mh">
+      <h3><i class="ti ti-chart-bar"></i> ${isEdit?'Editar Rubrica':'Nova Rubrica'} — ${proj.name||''}</h3>
+      <button class="btn btn-sm" onclick="closeModal()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="mb">
+      <div class="gr c2" style="gap:10px">
+        <div class="fg" style="grid-column:1/-1">
+          <label>Nome da rubrica *</label>
+          <input id="rrub-nome" value="${rub?rub.rubrica.replace(/"/g,'&quot;'):''}" placeholder="Ex: Cachê artístico">
+        </div>
+        <div class="fg">
+          <label>Grupo</label>
+          <select id="rrub-grupo">${grupoOpts}</select>
+        </div>
+        <div class="fg">
+          <label>Valor aprovado (R$) *</label>
+          <input id="rrub-aprovado" type="number" min="0" step="0.01" value="${rub?rub.aprovado:''}">
+        </div>
+        <div class="fg">
+          <label>Contratado (R$)</label>
+          <input id="rrub-contratado" type="number" min="0" step="0.01" value="${rub?rub.contratado:0}">
+        </div>
+        <div class="fg">
+          <label>Pago (R$)</label>
+          <input id="rrub-pago" type="number" min="0" step="0.01" value="${rub?rub.pago:0}">
+        </div>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-sm" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-sm btn-p" onclick="saveRubrica(${JSON.stringify(rid)},${pid})"><i class="ti ti-check"></i> ${isEdit?'Salvar alterações':'Criar rubrica'}</button>
+    </div>
+  </div>`;
+  document.getElementById('modal').style.display='flex';
+}
+
+function saveRubrica(rid,pid){
+  const nome=document.getElementById('rrub-nome').value.trim();
+  const grupo=document.getElementById('rrub-grupo').value;
+  const aprovado=parseFloat(document.getElementById('rrub-aprovado').value)||0;
+  const contratado=parseFloat(document.getElementById('rrub-contratado').value)||0;
+  const pago=parseFloat(document.getElementById('rrub-pago').value)||0;
+  if(!nome){showToast('Informe o nome da rubrica','var(--amber)');return;}
+  if(aprovado<=0){showToast('Informe o valor aprovado','var(--amber)');return;}
+  if(rid!==null&&rid!==undefined){
+    const idx=DB.rubricas.findIndex(r=>r.proj_id===pid&&(r.id===rid||r.rubrica===rid));
+    if(idx>=0){DB.rubricas[idx]={...DB.rubricas[idx],rubrica:nome,grupo,aprovado,contratado,pago};}
+    addAudit('EDIT',`Rubrica "${nome}"`);
+    showToast('Rubrica atualizada!','var(--teal)');
+  } else {
+    const dup=DB.rubricas.find(r=>r.proj_id===pid&&r.rubrica.toLowerCase()===nome.toLowerCase());
+    if(dup){showToast('Já existe uma rubrica com esse nome neste projeto','var(--amber)');return;}
+    DB.rubricas.push({id:Date.now(),proj_id:pid,grupo,rubrica:nome,aprovado,contratado,pago});
+    addAudit('CREATE',`Rubrica "${nome}"`);
+    showToast('Rubrica criada!','var(--teal)');
+  }
+  closeModal();
+  renderRubricas();
+}
+
+function deleteRubrica(rid){
+  const pid=parseInt(document.getElementById('rub-proj')?.value||0);
+  const rub=DB.rubricas.find(r=>r.proj_id===pid&&(r.id===rid||r.rubrica===rid));
+  if(!rub)return;
+  if(!confirm(`Excluir a rubrica "${rub.rubrica}"? Esta ação não pode ser desfeita.`))return;
+  DB.rubricas=DB.rubricas.filter(r=>!(r.proj_id===pid&&(r.id===rid||r.rubrica===rid)));
+  addAudit('DELETE',`Rubrica "${rub.rubrica}"`);
+  renderRubricas();
+  showToast('Rubrica excluída','var(--red)');
 }
 
 let payF='all';
