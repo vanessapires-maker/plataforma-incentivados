@@ -1055,13 +1055,28 @@ function renderRubricas(){
     <div class="mc"><div class="mc-lbl">% executado</div><div class="mc-val">${pct(totPg,totAp)}%</div></div>
   </div>
   <div class="sec">
-    <div class="sec-h"><span class="sec-t">Comparativo por rubrica — ${proj?.name}</span><span class="tag">${law.name}</span></div>
-    <table><thead><tr><th>Grupo</th><th>Rubrica</th><th>Aprovado</th><th>Contratado</th><th>Solicitado</th><th>Pago</th><th>Saldo</th><th>% Exec.</th><th>Status</th><th></th></tr></thead>
+    <div class="sec-h" style="justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="sec-t">Comparativo por rubrica — ${proj?.name}</span>
+        <span class="tag">${law.name}</span>
+      </div>
+      <div id="rub-bulk-bar" style="display:none;align-items:center;gap:8px">
+        <span id="rub-sel-count" style="font-size:12px;color:var(--text2)">0 selecionadas</span>
+        <button class="btn btn-sm btn-no" onclick="deleteSelectedRubricas()"><i class="ti ti-trash"></i> Excluir selecionadas</button>
+        <button class="btn btn-sm" onclick="clearRubricaSelection()"><i class="ti ti-x"></i> Desmarcar</button>
+      </div>
+    </div>
+    <table><thead><tr>
+      <th style="width:32px"><input type="checkbox" id="rub-chk-all" title="Selecionar todas" onchange="toggleAllRubricas(this.checked)" style="cursor:pointer;width:14px;height:14px"></th>
+      <th>Grupo</th><th>Rubrica</th><th>Aprovado</th><th>Contratado</th><th>Solicitado</th><th>Pago</th><th>Saldo</th><th>% Exec.</th><th>Status</th><th></th>
+    </tr></thead>
     <tbody>${rubs.map(r=>{
       const saldo=r.aprovado-r.pago; const p=pct(r.pago,r.aprovado);
       const cls=p>=100?'sr':p>=80?'sa':'sg';
       const rid=r.id||r.rubrica;
-      return `<tr>
+      const ridJson=JSON.stringify(rid);
+      return `<tr id="rub-row-${rid}">
+        <td><input type="checkbox" class="rub-chk" data-rid="${rid}" onchange="updateRubricaSelection()" style="cursor:pointer;width:14px;height:14px"></td>
         <td style="font-size:11px;color:var(--text2)">${r.grupo}</td>
         <td><strong>${r.rubrica}</strong></td>
         <td>${fmt(r.aprovado)}</td>
@@ -1072,12 +1087,49 @@ function renderRubricas(){
         <td>${pbar_el(r.pago,r.aprovado)}</td>
         <td><span class="st ${cls}">${p>=100?'Esgotado':p>=80?'Atenção':'OK'}</span></td>
         <td style="display:flex;gap:4px;white-space:nowrap">
-          <button class="btn btn-sm" title="Editar rubrica" onclick="openRubricaModal(${JSON.stringify(rid)})"><i class="ti ti-pencil"></i></button>
-          <button class="btn btn-sm btn-no" title="Excluir rubrica" onclick="deleteRubrica(${JSON.stringify(rid)})"><i class="ti ti-trash"></i></button>
+          <button class="btn btn-sm" title="Editar rubrica" onclick="openRubricaModal(${ridJson})"><i class="ti ti-pencil"></i></button>
+          <button class="btn btn-sm btn-no" title="Excluir rubrica" onclick="deleteRubrica(${ridJson})"><i class="ti ti-trash"></i></button>
         </td>
       </tr>`;
     }).join('')}</tbody></table>
   </div>`;
+}
+
+function toggleAllRubricas(checked){
+  document.querySelectorAll('.rub-chk').forEach(chk=>chk.checked=checked);
+  updateRubricaSelection();
+}
+
+function updateRubricaSelection(){
+  const all=document.querySelectorAll('.rub-chk');
+  const checked=document.querySelectorAll('.rub-chk:checked');
+  const allChk=document.getElementById('rub-chk-all');
+  const bar=document.getElementById('rub-bulk-bar');
+  const count=document.getElementById('rub-sel-count');
+  if(allChk)allChk.indeterminate=checked.length>0&&checked.length<all.length;
+  if(allChk&&checked.length===all.length&&all.length>0)allChk.checked=true;
+  if(bar)bar.style.display=checked.length>0?'flex':'none';
+  if(count)count.textContent=`${checked.length} selecionada${checked.length!==1?'s':''}`;
+}
+
+function clearRubricaSelection(){
+  document.querySelectorAll('.rub-chk').forEach(chk=>chk.checked=false);
+  const allChk=document.getElementById('rub-chk-all');
+  if(allChk){allChk.checked=false;allChk.indeterminate=false;}
+  updateRubricaSelection();
+}
+
+function deleteSelectedRubricas(){
+  const pid=parseInt(document.getElementById('rub-proj')?.value||0);
+  const checked=[...document.querySelectorAll('.rub-chk:checked')];
+  if(!checked.length)return;
+  const rids=checked.map(c=>{const v=c.dataset.rid;return isNaN(v)?v:parseFloat(v);});
+  const names=rids.map(rid=>{const r=DB.rubricas.find(x=>x.proj_id===pid&&(x.id===rid||x.rubrica===rid));return r?r.rubrica:rid;}).join(', ');
+  if(!confirm(`Excluir ${rids.length} rubrica${rids.length!==1?'s':''}: ${names}?\n\nEsta ação não pode ser desfeita.`))return;
+  DB.rubricas=DB.rubricas.filter(r=>!(r.proj_id===pid&&rids.some(rid=>r.id===rid||r.rubrica===rid)));
+  addAudit('DELETE',`${rids.length} rubrica(s) excluídas em lote`);
+  renderRubricas();
+  showToast(`${rids.length} rubrica${rids.length!==1?'s':''} excluída${rids.length!==1?'s':''}`, 'var(--red)');
 }
 
 // ── RUBRICA ADD / EDIT / DELETE ────────────────────────────────────────────
