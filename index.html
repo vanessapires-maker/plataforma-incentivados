@@ -213,7 +213,7 @@ code{font-family:monospace;font-size:10px;background:var(--bg3);padding:1px 4px;
       <button class="btn btn-sm btn-p" onclick="openModal('project')"><i class="ti ti-plus"></i> Novo projeto</button>
     </div>
   </div>
-  <table><thead><tr><th>Nome do projeto</th><th>PRONAC/Nº</th><th>Lei</th><th>Valor aprovado</th><th>Captado</th><th>Status</th><th>Execução</th><th></th></tr></thead>
+  <table><thead><tr><th>Nome do projeto</th><th>PRONAC/Nº</th><th>Lei</th><th>Valor aprovado</th><th>Captado</th><th>Status</th><th>Período de execução</th><th>% Exec.</th><th></th></tr></thead>
   <tbody id="projects-tbody"></tbody></table>
 </div>
 </div>
@@ -584,6 +584,7 @@ const fmt = v => Number(v).toLocaleString('pt-BR',{style:'currency',currency:'BR
 const pct = (a,b) => b ? Math.round(a/b*100) : 0;
 const initials = n => n.split(' ').map(x=>x[0]).join('').substring(0,2).toUpperCase();
 const getLaw = id => LAWS.find(l=>l.id===id)||{name:id,num:'',scope:''};
+const fmtDate = s => { if(!s)return'—'; const [y,m,d]=s.split('-'); return `${d}/${m}/${y}`; };
 
 const SM = {
   em_execucao:{c:'sb2',t:'Em execução'},
@@ -706,6 +707,10 @@ function renderProjects(){
       <td>${fmt(p.value)}</td>
       <td>${pbar_el(p.captado,p.value,'var(--teal)')}<span style="font-size:10px;color:var(--text2)">${fmt(p.captado)}</span></td>
       <td>${badge(p.status)}</td>
+      <td style="font-size:11px;white-space:nowrap">
+        ${p.inicio?`<div><i class="ti ti-calendar-event" style="color:var(--teal)"></i> ${fmtDate(p.inicio)}</div>`:'<span style="color:var(--text3)">—</span>'}
+        ${p.termino?`<div><i class="ti ti-calendar-x" style="color:var(--amber)"></i> ${fmtDate(p.termino)}</div>`:''}
+      </td>
       <td>${pbar_el(p.pct,100)}</td>
       <td><button class="btn btn-sm" onclick="showToast('Abrindo projeto...')"><i class="ti ti-eye"></i></button></td>
     </tr>`;
@@ -1728,7 +1733,7 @@ function openModal(type){
 function closeModal(){document.getElementById('modal').style.display='none';}
 function saveModal(){
   const acts={
-    project:()=>{const n=document.getElementById('f-name')?.value?.trim();if(!n)return false;DB.projects.push({id:Date.now(),name:n,pronac:document.getElementById('f-pronac')?.value||'—',law:document.getElementById('f-law')?.value||'rouanet',value:parseFloat(document.getElementById('f-value')?.value||0),captado:0,executor:document.getElementById('f-exec')?.value||'',cnpj:'',status:'aprovado',pct:0,approved:new Date().toISOString().slice(0,10),conta:'—'});addAudit('CREATE',`Project "${n}"`);renderProjects();renderDashboard();return true;},
+    project:()=>{const n=document.getElementById('f-name')?.value?.trim();if(!n)return false;DB.projects.push({id:Date.now(),name:n,pronac:document.getElementById('f-pronac')?.value||'—',law:document.getElementById('f-law')?.value||'rouanet',value:parseFloat(document.getElementById('f-value')?.value||0),captado:0,executor:document.getElementById('f-exec')?.value||'',cnpj:'',status:'aprovado',pct:0,approved:document.getElementById('f-approved')?.value||new Date().toISOString().slice(0,10),inicio:document.getElementById('f-inicio')?.value||'',termino:document.getElementById('f-termino')?.value||'',conta:document.getElementById('f-conta')?.value||'—'});addAudit('CREATE',`Project "${n}"`);renderProjects();renderDashboard();return true;},
     payment:()=>{
       const vendorId=parseInt(document.getElementById('f-vendor-id')?.value||0);
       const v=document.getElementById('f-vendor')?.value?.trim();
@@ -1781,6 +1786,8 @@ function getForm(type){
     <div class="fg"><label>Lei de incentivo</label><select id="f-law">${LAWS.map(l=>`<option value="${l.id}">${l.name} — ${l.num}</option>`).join('')}</select></div></div>
     <div class="gr c2"><div class="fg"><label>Valor aprovado (R$)</label><input type="number" id="f-value" placeholder="500000"></div>
     <div class="fg"><label>Data de aprovação</label><input type="date" id="f-approved"></div></div>
+    <div class="gr c2"><div class="fg"><label>Data de início de execução</label><input type="date" id="f-inicio"></div>
+    <div class="fg"><label>Data de término de execução</label><input type="date" id="f-termino"></div></div>
     <div class="gr c2"><div class="fg"><label>Executor / Proponente</label><input id="f-exec" placeholder="Razão social do proponente"></div>
     <div class="fg"><label>Conta bancária do projeto</label><input id="f-conta" placeholder="Banco / Ag. / CC"></div></div>
     <div class="fg"><label>Objeto do projeto</label><textarea id="f-obj" rows="2" placeholder="Descrição resumida..."></textarea></div>
