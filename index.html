@@ -1634,7 +1634,11 @@ async function omieCallForApp(appN, endpoint, call, params={}){
   if(!proxyUrl) throw new Error('sem_proxy');
   const res=await fetch(proxyUrl,{
     method:'POST',
-    headers:{'Content-Type':'application/json'},
+    headers:{
+      'Content-Type':'application/json',
+      'Authorization':`Bearer ${SB_KEY}`,
+      'apikey':SB_KEY
+    },
     body:JSON.stringify({endpoint,call,app_key,app_secret,params})
   });
   if(!res.ok) throw new Error(`Proxy HTTP ${res.status}`);
