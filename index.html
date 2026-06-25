@@ -317,7 +317,7 @@ code{font-family:monospace;font-size:10px;background:var(--bg3);padding:1px 4px;
     <div class="gr c2" style="gap:10px">
       <div class="fg" style="grid-column:1/-1">
         <label>URL da Edge Function (após deploy no Supabase)</label>
-        <input type="text" id="omie-proxy-url-main" placeholder="https://seu-projeto.supabase.co/functions/v1/omie-proxy" value="">
+        <input type="text" id="omie-proxy-url-main" placeholder="https://seu-projeto.supabase.co/functions/v1/omie-proxy" value="https://koxqrmdblupthtzrizhp.supabase.co/functions/v1/omie-proxy">
       </div>
       <button class="btn btn-ok" onclick="saveOmieProxyMain()" style="grid-column:1/-1"><i class="ti ti-device-floppy"></i> Salvar URL do Proxy</button>
     </div>
@@ -1607,9 +1607,11 @@ function initOmieCreds(){
       statusEl.innerHTML=`<span class="st sg"><i class="ti ti-check"></i> Configurado</span>`;
     }
   }
-  const proxyUrl=localStorage.getItem('omie_proxy_url')||'';
+  const DEFAULT_PROXY='https://koxqrmdblupthtzrizhp.supabase.co/functions/v1/omie-proxy';
+  if(!localStorage.getItem('omie_proxy_url')) localStorage.setItem('omie_proxy_url', DEFAULT_PROXY);
+  const proxyUrl=localStorage.getItem('omie_proxy_url')||DEFAULT_PROXY;
   const proxyEl=document.getElementById('omie-proxy-url-main');
-  if(proxyEl&&proxyUrl) proxyEl.value=proxyUrl;
+  if(proxyEl) proxyEl.value=proxyUrl;
   const proxyStatus=document.getElementById('omie-proxy-status');
   if(proxyStatus){
     proxyStatus.innerHTML=proxyUrl
