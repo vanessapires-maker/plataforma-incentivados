@@ -1103,7 +1103,7 @@ function renderRubricas(){
     </div>
     <table><thead><tr>
       <th style="width:32px"><input type="checkbox" id="rub-chk-all" title="Selecionar todas" onchange="toggleAllRubricas(this.checked)" style="cursor:pointer;width:14px;height:14px"></th>
-      <th>Grupo</th><th>Rubrica</th><th>Aprovado</th><th>Contratado</th><th>Solicitado</th><th>Pago</th><th>Saldo</th><th>% Exec.</th><th>Status</th><th></th>
+      <th>Grupo</th><th>Rubrica</th><th>Qtd</th><th>Valor Unit.</th><th>Total Aprovado</th><th>Contratado</th><th>Solicitado</th><th>Pago</th><th>Saldo</th><th>% Exec.</th><th>Status</th><th></th>
     </tr></thead>
     <tbody>${rubs.map(r=>{
       const saldo=r.aprovado-r.pago; const p=pct(r.pago,r.aprovado);
@@ -1114,7 +1114,9 @@ function renderRubricas(){
         <td><input type="checkbox" class="rub-chk" data-rid="${rid}" onchange="updateRubricaSelection()" style="cursor:pointer;width:14px;height:14px"></td>
         <td style="font-size:11px;color:var(--text2)">${r.grupo}</td>
         <td><strong>${r.rubrica}</strong></td>
-        <td>${fmt(r.aprovado)}</td>
+        <td style="font-size:11px;text-align:center">${r.qtd||'—'}</td>
+        <td style="font-size:11px;color:var(--text2)">${r.unit?fmt(r.unit):'—'}</td>
+        <td style="font-weight:600;color:var(--purple)">${fmt(r.aprovado)}${r.qtd&&r.unit?`<div style="font-size:10px;color:var(--text3);font-weight:400">${r.qtd}× ${fmt(r.unit)}</div>`:''}</td>
         <td>${fmt(r.contratado)}</td>
         <td style="color:var(--amber)">${fmt(r.contratado-r.pago)}</td>
         <td><strong>${fmt(r.pago)}</strong></td>
@@ -1170,6 +1172,13 @@ function deleteSelectedRubricas(){
 // ── RUBRICA ADD / EDIT / DELETE ────────────────────────────────────────────
 const GRUPOS=['Produção','Cachê','Infraestrutura','Comunicação','Admin','Impostos','Geral'];
 
+function calcRubTotal(){
+  const qtd=parseFloat(document.getElementById('rrub-qtd')?.value||0);
+  const unit=parseFloat(document.getElementById('rrub-unit')?.value||0);
+  const totalEl=document.getElementById('rrub-aprovado');
+  if(totalEl&&qtd>0&&unit>0) totalEl.value=(qtd*unit).toFixed(2);
+}
+
 function openRubricaModal(rid){
   const pid=parseInt(document.getElementById('rub-proj')?.value||0);
   if(!pid){showToast('Selecione primeiro o projeto','var(--amber)');return;}
@@ -1187,8 +1196,8 @@ function openRubricaModal(rid){
       <button class="btn btn-sm" onclick="closeModal()"><i class="ti ti-x"></i></button>
     </div>
     <div class="mb">
-      <div class="gr c2" style="gap:10px">
-        <div class="fg" style="grid-column:1/-1">
+      <div class="gr" style="gap:10px">
+        <div class="fg">
           <label>Nome da rubrica *</label>
           <input id="rrub-nome" value="${rub?rub.rubrica.replace(/"/g,'&quot;'):''}" placeholder="Ex: Cachê artístico">
         </div>
@@ -1196,17 +1205,29 @@ function openRubricaModal(rid){
           <label>Grupo</label>
           <select id="rrub-grupo">${grupoOpts}</select>
         </div>
-        <div class="fg">
-          <label>Valor aprovado (R$) *</label>
-          <input id="rrub-aprovado" type="number" min="0" step="0.01" value="${rub?rub.aprovado:''}">
+        <div class="gr c3" style="gap:10px">
+          <div class="fg">
+            <label>Quantidade *</label>
+            <input id="rrub-qtd" type="number" min="1" step="1" value="${rub&&rub.qtd?rub.qtd:1}" placeholder="1" oninput="calcRubTotal()">
+          </div>
+          <div class="fg">
+            <label>Valor unitário (R$) *</label>
+            <input id="rrub-unit" type="number" min="0" step="0.01" value="${rub&&rub.unit?rub.unit:''}" placeholder="Ex: 5000,00" oninput="calcRubTotal()">
+          </div>
+          <div class="fg">
+            <label>Valor total aprovado (R$)</label>
+            <input id="rrub-aprovado" type="number" min="0" step="0.01" value="${rub?rub.aprovado:''}" placeholder="Auto: qtd × unit" style="background:var(--bg2);font-weight:600;color:var(--purple)" oninput="">
+          </div>
         </div>
-        <div class="fg">
-          <label>Contratado (R$)</label>
-          <input id="rrub-contratado" type="number" min="0" step="0.01" value="${rub?rub.contratado:0}">
-        </div>
-        <div class="fg">
-          <label>Pago (R$)</label>
-          <input id="rrub-pago" type="number" min="0" step="0.01" value="${rub?rub.pago:0}">
+        <div class="gr c2" style="gap:10px">
+          <div class="fg">
+            <label>Contratado (R$)</label>
+            <input id="rrub-contratado" type="number" min="0" step="0.01" value="${rub?rub.contratado:0}">
+          </div>
+          <div class="fg">
+            <label>Pago (R$)</label>
+            <input id="rrub-pago" type="number" min="0" step="0.01" value="${rub?rub.pago:0}">
+          </div>
         </div>
       </div>
     </div>
@@ -1221,20 +1242,22 @@ function openRubricaModal(rid){
 function saveRubrica(rid,pid){
   const nome=document.getElementById('rrub-nome').value.trim();
   const grupo=document.getElementById('rrub-grupo').value;
+  const qtd=parseFloat(document.getElementById('rrub-qtd').value)||1;
+  const unit=parseFloat(document.getElementById('rrub-unit').value)||0;
   const aprovado=parseFloat(document.getElementById('rrub-aprovado').value)||0;
   const contratado=parseFloat(document.getElementById('rrub-contratado').value)||0;
   const pago=parseFloat(document.getElementById('rrub-pago').value)||0;
   if(!nome){showToast('Informe o nome da rubrica','var(--amber)');return;}
-  if(aprovado<=0){showToast('Informe o valor aprovado','var(--amber)');return;}
+  if(aprovado<=0){showToast('Informe o valor unitário e quantidade (ou o valor total)','var(--amber)');return;}
   if(rid!==null&&rid!==undefined){
     const idx=DB.rubricas.findIndex(r=>r.proj_id===pid&&(r.id===rid||r.rubrica===rid));
-    if(idx>=0){DB.rubricas[idx]={...DB.rubricas[idx],rubrica:nome,grupo,aprovado,contratado,pago};}
+    if(idx>=0){DB.rubricas[idx]={...DB.rubricas[idx],rubrica:nome,grupo,qtd,unit,aprovado,contratado,pago};}
     addAudit('EDIT',`Rubrica "${nome}"`);
     showToast('Rubrica atualizada!','var(--teal)');
   } else {
     const dup=DB.rubricas.find(r=>r.proj_id===pid&&r.rubrica.toLowerCase()===nome.toLowerCase());
     if(dup){showToast('Já existe uma rubrica com esse nome neste projeto','var(--amber)');return;}
-    DB.rubricas.push({id:Date.now(),proj_id:pid,grupo,rubrica:nome,aprovado,contratado,pago});
+    DB.rubricas.push({id:Date.now(),proj_id:pid,grupo,rubrica:nome,qtd,unit,aprovado,contratado,pago});
     addAudit('CREATE',`Rubrica "${nome}"`);
     showToast('Rubrica criada!','var(--teal)');
   }
