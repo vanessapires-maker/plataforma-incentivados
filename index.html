@@ -245,7 +245,7 @@ code{font-family:monospace;font-size:10px;background:var(--bg3);padding:1px 4px;
   </div>
   <button class="btn btn-sm btn-p" onclick="openModal('payment')"><i class="ti ti-plus"></i> Nova solicitação</button>
 </div>
-<div class="sec"><table><thead><tr><th>Fornecedor</th><th>Projeto</th><th>Rubrica</th><th>Bruto</th><th>Retenção</th><th>Líquido</th><th>Status</th><th></th></tr></thead>
+<div class="sec"><table><thead><tr><th>Fornecedor</th><th>Projeto</th><th>Rubrica</th><th>Bruto</th><th>Retenção</th><th>Líquido</th><th>Pgto / Forma</th><th>Status</th><th></th></tr></thead>
 <tbody id="pay-tbody"></tbody></table></div>
 </div>
 
@@ -1268,13 +1268,19 @@ function renderPayments(){
       <td>${fmt(p.gross)}</td>
       <td style="color:var(--rtxt);font-size:11px">${tot>0?'-'+fmt(tot):'—'}</td>
       <td><strong>${fmt(t.net)}</strong></td>
+      <td style="font-size:11px">
+        ${p.pay_date?`<div style="display:flex;align-items:center;gap:4px"><i class="ti ti-calendar" style="color:var(--teal)"></i>${fmtDate(p.pay_date)}</div>`:'<span style="color:var(--text3)">—</span>'}
+        ${p.pay_forma==='50_50'
+          ?`<span class="tag" style="margin-top:3px;display:inline-block">50% + 50%</span>${p.pay_date2?`<div style="font-size:10px;color:var(--text2);margin-top:2px">2ª: ${fmtDate(p.pay_date2)}</div>`:''}`
+          :p.pay_date?`<span class="tag" style="margin-top:3px;display:inline-block;background:var(--tbg);color:var(--ttxt)">Integral</span>`:''}
+      </td>
       <td>${badge(p.status)}${!p.cnae_ok?'<span class="st sr" style="margin-left:4px;font-size:10px">CNAE ⚠</span>':''}</td>
       <td style="display:flex;gap:4px">
         <button class="btn btn-sm" onclick="viewPayment(${p.id})"><i class="ti ti-eye"></i></button>
         ${p.status==='pending'?`<button class="btn btn-sm btn-ok" onclick="approveP(${p.id})"><i class="ti ti-check"></i></button>`:''}
       </td>
     </tr>`;
-  }).join('')||`<tr><td colspan="8"><div class="empty"><i class="ti ti-receipt"></i>Nenhuma solicitação nesta categoria</div></td></tr>`;
+  }).join('')||`<tr><td colspan="9"><div class="empty"><i class="ti ti-receipt"></i>Nenhuma solicitação nesta categoria</div></td></tr>`;
 }
 
 function approveP(id){
@@ -1367,6 +1373,15 @@ Equipe Financeira CRIAPE`;
             <span style="color:var(--teal)">${fmt(t.net)}</span>
           </div>
         </div>
+        <!-- Datas e forma de pagamento -->
+        ${(p.pay_date||p.pay_forma)?`<div style="background:var(--pbg);border-radius:var(--r);padding:10px 12px;margin-top:10px;display:flex;gap:18px;flex-wrap:wrap">
+          ${p.pay_date?`<div><div style="font-size:10px;color:var(--ptxt);font-weight:600">DATA DE PAGAMENTO</div>
+            <div style="font-size:13px;font-weight:600;color:var(--purple)">${fmtDate(p.pay_date)}</div></div>`:''}
+          ${p.pay_forma?`<div><div style="font-size:10px;color:var(--ptxt);font-weight:600">FORMA DE PAGAMENTO</div>
+            <div style="font-size:13px;font-weight:600;color:var(--purple)">${p.pay_forma==='50_50'?'50% + 50%':'Integral (100%)'}</div></div>`:''}
+          ${p.pay_forma==='50_50'&&p.pay_date2?`<div><div style="font-size:10px;color:var(--ptxt);font-weight:600">2ª PARCELA</div>
+            <div style="font-size:13px;font-weight:600;color:var(--purple)">${fmtDate(p.pay_date2)}</div></div>`:''}
+        </div>`:''}
         ${already?`<div class="alert al-w" style="margin-top:10px"><i class="ti ti-alert-circle"></i> Já existe contrato com este fornecedor neste projeto: <strong>${already.doc}</strong></div>`:''}
       </div>
 
@@ -2183,7 +2198,8 @@ function saveModal(){
       if(vendor?.rfb==='inapto'){showToast('Fornecedor INAPTO na RFB — pagamento bloqueado','var(--red)');return false;}
       const g=parseFloat(document.getElementById('f-gross')?.value||0);
       if(!g){showToast('Informe o valor bruto','var(--red)');return false;}
-      DB.payments.push({id:Date.now(),vendor:v,vendor_id:vendorId,proj_id:parseInt(document.getElementById('f-proj')?.value||1),rubrica:document.getElementById('f-rub')?.value||'—',service:document.getElementById('f-service')?.value||'cache_artistico',personType:document.getElementById('f-person')?.value||'pf',taxRegime:document.getElementById('f-regime')?.value||'',gross:g,status:'pending',date:new Date().toISOString().slice(0,10),cnae_ok:vendor?.cnae_ok!==false,saldo_ok:true});
+      const payForma=document.getElementById('f-pay-forma')?.value||'integral';
+      DB.payments.push({id:Date.now(),vendor:v,vendor_id:vendorId,proj_id:parseInt(document.getElementById('f-proj')?.value||1),rubrica:document.getElementById('f-rub')?.value||'—',service:document.getElementById('f-service')?.value||'cache_artistico',personType:document.getElementById('f-person')?.value||'pf',taxRegime:document.getElementById('f-regime')?.value||'',gross:g,status:'pending',date:new Date().toISOString().slice(0,10),pay_date:document.getElementById('f-pay-date')?.value||'',pay_forma:payForma,pay_date2:payForma==='50_50'?(document.getElementById('f-pay-date2')?.value||''):'',cnae_ok:vendor?.cnae_ok!==false,saldo_ok:true});
       addAudit('CREATE',`PaymentRequest "${v}" — ${document.getElementById('f-rub')?.value}`);
       renderPayments();renderApprovals();renderDashboard();updateBadge();return true;
     },
@@ -2253,6 +2269,16 @@ function getForm(type){
         <div class="fg"><label>Regime tributário</label><select id="f-regime" onchange="setupTax()"><option value="">—</option><option value="simples_nacional">Simples Nacional</option><option value="lucro_presumido">Lucro Presumido</option><option value="lucro_real">Lucro Real</option></select></div>
       </div>
       <div class="fg" style="margin-top:10px"><label>Valor bruto (R$) *</label><input type="number" id="f-gross" placeholder="Ex: 10000" oninput="setupTax()"></div>
+      <div class="gr c2" style="margin-top:10px">
+        <div class="fg"><label>Data para pagamento *</label><input type="date" id="f-pay-date"></div>
+        <div class="fg"><label>Forma de pagamento *</label><select id="f-pay-forma" onchange="document.getElementById('f-pay-parcela2-wrap').style.display=this.value==='50_50'?'block':'none'">
+          <option value="integral">Integral (100%)</option>
+          <option value="50_50">Parcela 1ª (50%) + 2ª (50%)</option>
+        </select></div>
+      </div>
+      <div id="f-pay-parcela2-wrap" style="display:none;margin-top:6px">
+        <div class="fg"><label>Data da 2ª parcela (50%)</label><input type="date" id="f-pay-date2"></div>
+      </div>
       <div id="tax-result"></div>
       <div id="sem-result"></div>
     </div>
