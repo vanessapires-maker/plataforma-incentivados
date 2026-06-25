@@ -1622,6 +1622,17 @@ let activeModal='';
 function openNew(){const p=document.querySelector('.ni.active')?.dataset.page;const m={projects:'project',payments:'payment',vendors:'vendor',contracts:'contract'};openModal(m[p]||'project');}
 function openModal(type){
   activeModal=type;
+  // Always rebuild standard structure to avoid corruption from custom modals
+  const modalOv=document.getElementById('modal');
+  modalOv.innerHTML=`
+    <div class="modal">
+      <div class="mh"><h3 id="modal-title">Novo</h3><button class="btn btn-sm" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+      <div class="mb" id="modal-body"></div>
+      <div class="mf" id="modal-footer">
+        <button class="btn btn-sm" onclick="closeModal()">Cancelar</button>
+        <button class="btn btn-sm btn-p" onclick="saveModal()">Salvar</button>
+      </div>
+    </div>`;
   const titles={project:'Novo projeto',payment:'Nova solicitação de pagamento',vendor:'Novo fornecedor',contract:'Novo contrato','contract-template':'Templates de contrato'};
   document.getElementById('modal-title').textContent=titles[type]||'Novo';
   document.getElementById('modal-body').innerHTML=getForm(type);
@@ -1629,7 +1640,7 @@ function openModal(type){
   document.getElementById('modal-footer').innerHTML=noSave.includes(type)
     ?'<button class="btn btn-sm" onclick="closeModal()">Fechar</button>'
     :'<button class="btn btn-sm" onclick="closeModal()">Cancelar</button><button class="btn btn-sm btn-p" onclick="saveModal()">Salvar</button>';
-  document.getElementById('modal').style.display='flex';
+  modalOv.style.display='flex';
   if(type==='payment')setupTax();
 }
 function closeModal(){document.getElementById('modal').style.display='none';}
