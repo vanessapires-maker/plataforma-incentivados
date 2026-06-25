@@ -1248,29 +1248,111 @@ function approveP(id){
   p.status='approved';
   addAudit('APPROVE',`PaymentRequest #${id}`);
   updateBadge();renderPayments();renderApprovals();renderDashboard();
-  // Check if a contract already exists for this vendor+project
-  const already=DB.contracts.find(c=>c.vendor_id===p.vendor_id&&c.proj_id===p.proj_id);
-  const vendor=DB.vendors.find(v=>v.id===p.vendor_id)||{};
+
+  const vendor=DB.vendors.find(v=>v.id===p.vendor_id)||{name:p.vendor,type:p.personType==='pj'?'PJ':'PF',doc:'',email:''};
   const proj=DB.projects.find(pr=>pr.id===p.proj_id)||{};
+  const law=getLaw(proj.law||'');
+  const rub=DB.rubricas.find(r=>r.proj_id===p.proj_id&&r.rubrica===p.rubrica)||{};
+  const t=calcTax(p.gross,p.service,p.personType,p.taxRegime);
+  const tot=t.iss+t.ir+t.inss+t.pis;
+  const already=DB.contracts.find(c=>c.vendor_id===p.vendor_id&&c.proj_id===p.proj_id);
+  const cnpjPagador=proj.cnpj||'(CNPJ do proponente)';
+  const dataFmt=new Date().toLocaleDateString('pt-BR');
+
+  // NF request text
+  const nfText=`Prezado(a) ${p.vendor},
+
+Informamos que a solicitação de pagamento referente ao serviço prestado foi APROVADA.
+
+Para que possamos efetuar o pagamento, solicitamos a emissão da Nota Fiscal com os seguintes dados:
+
+DADOS DO TOMADOR (quem paga):
+Razão Social: ${proj.executor||'CRIAPE'}
+CNPJ: ${cnpjPagador}
+
+DADOS DO SERVIÇO:
+Projeto: ${proj.name||'—'} (${proj.pronac||'—'})
+Lei de Incentivo: ${law.name||'—'} — ${law.num||''}
+Rubrica: ${p.rubrica}${rub.grupo?` (${rub.grupo})`:''}
+Descrição: ${p.service?.replace(/_/g,' ')||'—'}
+Valor bruto: ${fmt(p.gross)}${tot>0?`\nRetenções na fonte: -${fmt(tot)} (${p.personType==='pf'?'IRRF':'ISS/PIS/COFINS'})`:'\n(Simples Nacional — sem retenção na fonte)'}
+Valor líquido a receber: ${fmt(t.net)}
+
+Favor emitir a NF até 5 dias úteis antes do pagamento e encaminhar para: financeiro@criape.com.br
+
+Atenciosamente,
+Equipe Financeira CRIAPE`;
+
   document.getElementById('modal').innerHTML=`
-  <div class="modal" style="max-width:480px">
+  <div class="modal" style="width:680px;max-width:96vw">
     <div class="mh" style="background:var(--tbg);border-bottom-color:#9FE1CB">
-      <h3 style="color:var(--ttxt)"><i class="ti ti-circle-check" style="font-size:18px"></i> Pagamento aprovado!</h3>
+      <h3 style="color:var(--ttxt)"><i class="ti ti-circle-check" style="font-size:16px"></i> Pagamento aprovado — ${dataFmt}</h3>
       <button class="btn btn-sm" onclick="closeModal()"><i class="ti ti-x"></i></button>
     </div>
-    <div class="mb" style="padding:18px">
-      <div style="font-size:13px;margin-bottom:14px">
-        <strong>${p.vendor}</strong> · ${fmt(p.gross)} · ${p.rubrica}
-        <div style="font-size:11px;color:var(--text2);margin-top:3px">${proj.name||''}</div>
+    <div class="mb" style="padding:0">
+
+      <!-- FICHA DO PAGAMENTO -->
+      <div style="padding:16px 18px;border-bottom:.5px solid var(--border)">
+        <div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Ficha do pagamento</div>
+        <div class="gr c2" style="gap:10px">
+          <div>
+            <div style="font-size:10px;color:var(--text2)">Fornecedor</div>
+            <div style="font-size:13px;font-weight:600">${p.vendor}</div>
+            <div style="font-size:11px;color:var(--text2)">${vendor.type} · ${vendor.doc||'—'} · ${vendor.regime||'—'}</div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--text2)">Projeto</div>
+            <div style="font-size:12px;font-weight:500">${proj.name||'—'}</div>
+            <div style="font-size:11px;color:var(--text2)">${proj.pronac||'—'} · <span class="tag" style="font-size:10px">${law.name||'—'}</span></div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--text2)">Rubrica</div>
+            <div style="font-size:12px;font-weight:500">${p.rubrica}</div>
+            <div style="font-size:11px;color:var(--text2)">${rub.grupo||'—'}</div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--text2)">CNPJ pagador (tomador)</div>
+            <div style="font-size:12px;font-weight:600;color:var(--purple)">${cnpjPagador}</div>
+            <div style="font-size:11px;color:var(--text2)">${proj.executor||'—'}</div>
+          </div>
+        </div>
+        <!-- Valores -->
+        <div style="background:var(--bg2);border-radius:var(--r);padding:10px 12px;margin-top:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:12px;color:var(--text2)">Valor bruto</span>
+            <span style="font-size:13px;font-weight:600">${fmt(p.gross)}</span>
+          </div>
+          ${t.iss>0?`<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--rtxt);margin-top:3px"><span>ISS (5%)</span><span>-${fmt(t.iss)}</span></div>`:''}
+          ${t.ir>0?`<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--rtxt);margin-top:3px"><span>IRRF</span><span>-${fmt(t.ir)}</span></div>`:''}
+          ${t.inss>0?`<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--rtxt);margin-top:3px"><span>INSS (11%)</span><span>-${fmt(t.inss)}</span></div>`:''}
+          ${t.pis>0?`<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--rtxt);margin-top:3px"><span>PIS/COFINS/CSLL (4,65%)</span><span>-${fmt(t.pis)}</span></div>`:''}
+          ${tot===0?`<div style="font-size:11px;color:var(--teal);margin-top:3px"><i class="ti ti-check"></i> Simples Nacional — sem retenção</div>`:''}
+          <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;border-top:.5px solid var(--border);padding-top:7px;margin-top:7px">
+            <span>Valor líquido a pagar</span>
+            <span style="color:var(--teal)">${fmt(t.net)}</span>
+          </div>
+        </div>
+        ${already?`<div class="alert al-w" style="margin-top:10px"><i class="ti ti-alert-circle"></i> Já existe contrato com este fornecedor neste projeto: <strong>${already.doc}</strong></div>`:''}
       </div>
-      ${already
-        ?`<div class="alert al-w"><i class="ti ti-alert-circle"></i> Já existe um contrato com este fornecedor neste projeto (<strong>${already.doc}</strong>). Deseja criar um contrato adicional mesmo assim?</div>`
-        :`<div class="alert al-i"><i class="ti ti-file-text"></i> O próximo passo é formalizar o contrato com o fornecedor antes de realizar o pagamento.</div>`
-      }
+
+      <!-- SOLICITAÇÃO DE NOTA FISCAL -->
+      <div style="padding:16px 18px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em"><i class="ti ti-file-invoice" style="color:var(--amber)"></i> Solicitação de Nota Fiscal ao fornecedor</div>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('nf-draft').value).then(()=>showToast('Texto copiado!'))"><i class="ti ti-copy"></i> Copiar</button>
+            ${vendor.email?`<a href="mailto:${vendor.email}?subject=Solicitação de Nota Fiscal — ${encodeURIComponent(proj.name||'Projeto')}&body=${encodeURIComponent(nfText)}" class="btn btn-sm btn-ok" style="text-decoration:none"><i class="ti ti-mail"></i> Abrir e-mail</a>`:''}
+          </div>
+        </div>
+        <textarea id="nf-draft" style="width:100%;min-height:200px;padding:10px;font-size:11px;font-family:monospace;border:.5px solid var(--border2);border-radius:var(--r);background:var(--bg2);color:var(--text);resize:vertical;line-height:1.6">${nfText}</textarea>
+      </div>
     </div>
-    <div class="mf" style="justify-content:space-between">
-      <button class="btn btn-sm" onclick="closeModal()">Não agora</button>
-      <button class="btn btn-sm btn-p" onclick="closeModal();openContractFromPayment(${id})"><i class="ti ti-file-plus"></i> Gerar contrato agora</button>
+    <div style="padding:10px 16px;border-top:.5px solid var(--border);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-sm" onclick="closeModal()">Fechar</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-sm" onclick="closeModal();openContractFromPayment(${id})"><i class="ti ti-file-plus"></i> ${already?'Novo contrato':'Gerar contrato'}</button>
+        <button class="btn btn-sm btn-p" onclick="navigator.clipboard.writeText(document.getElementById('nf-draft').value).then(()=>showToast('Solicitação de NF copiada!'));closeModal()"><i class="ti ti-check"></i> Copiar NF e fechar</button>
+      </div>
     </div>
   </div>`;
   document.getElementById('modal').style.display='flex';
