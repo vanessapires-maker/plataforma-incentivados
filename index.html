@@ -365,7 +365,7 @@ code{font-family:monospace;font-size:10px;background:var(--bg3);padding:1px 4px;
   <div class="sec-h"><span class="sec-t">Fornecedores (<span id="v-cnt">0</span>)</span>
     <button class="btn btn-sm btn-p" onclick="openModal('vendor')"><i class="ti ti-plus"></i> Novo fornecedor</button>
   </div>
-  <table><thead><tr><th>Nome / Razão social</th><th>Tipo</th><th>CNPJ/CPF</th><th>CNAE principal</th><th>Regime</th><th>Certidões</th><th>Status RFB</th><th></th></tr></thead>
+  <table><thead><tr><th>Nome / Razão social</th><th>Tipo</th><th>CNPJ/CPF</th><th>CNAE principal</th><th>Regime</th><th>Serviços</th><th>Certidões</th><th>Status RFB</th><th></th></tr></thead>
   <tbody id="vend-tbody"></tbody></table>
 </div>
 </div>
@@ -2063,6 +2063,7 @@ function renderVendors(){
       <td style="font-size:11px;color:var(--text2)">${v.doc}</td>
       <td style="font-size:11px">${v.cnae}</td>
       <td style="font-size:11px">${v.regime}</td>
+      <td style="font-size:11px;max-width:180px">${(v.servicos&&v.servicos.length)?v.servicos.map(s=>`<span class="tag" style="font-size:10px;margin:1px 2px 1px 0;display:inline-block">${s}</span>`).join(''):'<span style="color:var(--text3)">—</span>'}</td>
       <td style="font-size:10px">${certBadges||'—'}</td>
       <td>${badge(v.rfb)}</td>
       <td><button class="btn btn-sm" onclick="viewVendor(${v.id})"><i class="ti ti-eye"></i></button></td>
@@ -2336,7 +2337,7 @@ function saveModal(){
       addAudit('CREATE',`PaymentRequest "${v}" — ${document.getElementById('f-rub')?.value}`);
       renderPayments();renderApprovals();renderDashboard();updateBadge();return true;
     },
-    vendor:()=>{const n=document.getElementById('f-vname')?.value?.trim();if(!n)return false;DB.vendors.push({id:Date.now(),name:n,type:document.getElementById('f-vtype')?.value||'PF',doc:document.getElementById('f-vdoc')?.value||'',cnae:document.getElementById('f-vcnae')?.value||'—',regime:document.getElementById('f-vregime')?.value||'—',bank:document.getElementById('f-vbank')?.value||'',email:document.getElementById('f-vemail')?.value||'',rfb:'ativo',certs:{}});addAudit('CREATE',`Vendor "${n}"`);renderVendors();return true;},
+    vendor:()=>{const n=document.getElementById('f-vname')?.value?.trim();if(!n)return false;DB.vendors.push({id:Date.now(),name:n,type:document.getElementById('f-vtype')?.value||'PF',doc:document.getElementById('f-vdoc')?.value||'',cnae:document.getElementById('f-vcnae')?.value||'—',regime:document.getElementById('f-vregime')?.value||'—',bank:document.getElementById('f-vbank')?.value||'',email:document.getElementById('f-vemail')?.value||'',servicos:getServicosFromModal(),rfb:'ativo',certs:{}});addAudit('CREATE',`Vendor "${n}"`);renderVendors();return true;},
     contract:()=>{
       const vendorId=parseInt(document.getElementById('fc-vendor-id')?.value||0);
       const vname=document.getElementById('fc-vendor-name')?.value?.trim();
@@ -2426,6 +2427,14 @@ function getForm(type){
     <div class="gr c2"><div class="fg"><label>Regime tributário</label><select id="f-vregime"><option>—</option><option>Simples Nacional</option><option>Lucro Presumido</option><option>Lucro Real</option><option>MEI</option></select></div>
     <div class="fg"><label>Dados bancários</label><input id="f-vbank" placeholder="Banco / Ag. / Conta"></div></div>
     <div class="fg"><label>E-mail do fornecedor</label><input type="email" id="f-vemail" placeholder="fornecedor@email.com"></div>
+    <div class="fg" style="margin-top:4px"><label>Serviços prestados</label>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px" id="f-vservicos-tags"></div>
+      <div style="display:flex;gap:6px">
+        <input id="f-vservico-input" placeholder="Ex: Produção audiovisual, Figurino, Cachê artístico..." style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();addServicoTag();}">
+        <button type="button" class="btn btn-sm btn-p" onclick="addServicoTag()"><i class="ti ti-plus"></i></button>
+      </div>
+      <div style="font-size:10px;color:var(--text2);margin-top:4px">Digite e pressione Enter ou clique + para adicionar. Clique na tag para remover.</div>
+    </div>
     <div class="alert al-i" style="margin-top:6px"><i class="ti ti-info-circle"></i> Após salvar, o sistema consultará a Receita Federal e solicitará upload das certidões negativas automaticamente.</div>
   </div>`;
   if(type==='contract')return`<div class="gr" style="gap:10px">
@@ -2478,6 +2487,50 @@ function getForm(type){
 }
 
 // ── VENDOR LOOKUP (shared logic) ───────────────────────────────────────────────
+function addServicoTag(){
+  const input=document.getElementById('f-vservico-input');
+  if(!input) return;
+  const val=input.value.trim();
+  if(!val) return;
+  const container=document.getElementById('f-vservicos-tags');
+  if(!container) return;
+  // Check duplicate
+  const existing=[...container.querySelectorAll('span[data-svc]')].map(s=>s.dataset.svc.toLowerCase());
+  if(existing.includes(val.toLowerCase())){input.value='';return;}
+  const tag=document.createElement('span');
+  tag.dataset.svc=val;
+  tag.className='tag';
+  tag.style.cssText='cursor:pointer;display:inline-flex;align-items:center;gap:4px;font-size:11px';
+  tag.innerHTML=`${val} <i class="ti ti-x" style="font-size:10px"></i>`;
+  tag.title='Clique para remover';
+  tag.onclick=()=>tag.remove();
+  container.appendChild(tag);
+  input.value='';
+  input.focus();
+}
+
+function getServicosFromModal(){
+  const container=document.getElementById('f-vservicos-tags');
+  if(!container) return [];
+  return [...container.querySelectorAll('span[data-svc]')].map(s=>s.dataset.svc);
+}
+
+function setServicosInModal(servicos){
+  const container=document.getElementById('f-vservicos-tags');
+  if(!container) return;
+  container.innerHTML='';
+  (servicos||[]).forEach(val=>{
+    const tag=document.createElement('span');
+    tag.dataset.svc=val;
+    tag.className='tag';
+    tag.style.cssText='cursor:pointer;display:inline-flex;align-items:center;gap:4px;font-size:11px';
+    tag.innerHTML=`${val} <i class="ti ti-x" style="font-size:10px"></i>`;
+    tag.title='Clique para remover';
+    tag.onclick=()=>tag.remove();
+    container.appendChild(tag);
+  });
+}
+
 function _vendorLookupCore(raw, statusElId, detailsElId, nameElId, idElId, extraFn){
   const statusEl=document.getElementById(statusElId);
   const detailsEl=document.getElementById(detailsElId);
