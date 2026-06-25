@@ -276,21 +276,55 @@ code{font-family:monospace;font-size:10px;background:var(--bg3);padding:1px 4px;
 
 <!-- OMIE INTEGRAÇÃO -->
 <div class="page" id="page-omie">
-<!-- Credentials panel -->
-<div class="sec" style="margin-bottom:14px">
-  <div class="sec-h">
-    <span class="sec-t"><i class="ti ti-api" style="color:var(--purple)"></i> Configuração Omie API</span>
-    <span id="omie-cred-status"></span>
+
+<!-- AVISO CORS fixo no topo -->
+<div class="alert al-w" style="margin-bottom:12px">
+  <i class="ti ti-alert-triangle" style="flex-shrink:0;font-size:16px"></i>
+  <div style="font-size:12px"><strong>Atenção:</strong> A API do Omie bloqueia chamadas diretas do navegador (restrição CORS). Para o sync funcionar, você precisa configurar o <strong>Proxy Supabase</strong> abaixo — é rápido e usa o Supabase que você já tem.
+  <button class="btn btn-sm btn-p" onclick="showOmieProxyModal()" style="margin-left:8px"><i class="ti ti-code"></i> Configurar proxy (5 min)</button>
+  <span id="omie-proxy-status" style="margin-left:8px"></span>
   </div>
-  <div style="padding:14px">
-    <div class="alert al-i" style="margin-bottom:10px"><i class="ti ti-info-circle" style="flex-shrink:0"></i><span>Acesse <b>Omie → Configurações → Integrações → Criar aplicação</b> para obter seu App Key e App Secret. As credenciais ficam salvas apenas no seu navegador.</span></div>
-    <div class="gr c3">
-      <div class="fg"><label>App Key</label><input type="text" id="omie-key" placeholder="Seu App Key"></div>
-      <div class="fg"><label>App Secret</label><input type="password" id="omie-secret" placeholder="Seu App Secret"></div>
-      <div class="fg" style="display:flex;align-items:flex-end"><button class="btn btn-ok" onclick="saveOmieCreds()" style="width:100%"><i class="ti ti-device-floppy"></i> Salvar credenciais</button></div>
+</div>
+
+<!-- Dois apps Omie -->
+<div class="gr c2" style="gap:12px;margin-bottom:14px">
+  <!-- App 1 -->
+  <div class="sec">
+    <div class="sec-h"><span class="sec-t"><i class="ti ti-building" style="color:var(--purple)"></i> Empresa 1</span><span id="omie-app1-status"></span></div>
+    <div style="padding:12px;display:grid;gap:8px">
+      <div class="fg"><label>Nome da empresa</label><input type="text" id="omie-app1-name" placeholder="Ex: Target Brasil"></div>
+      <div class="fg"><label>App Key</label><input type="text" id="omie-app1-key" placeholder="App Key do Omie" autocomplete="off"></div>
+      <div class="fg"><label>App Secret</label><input type="password" id="omie-app1-secret" placeholder="App Secret do Omie" autocomplete="off"></div>
+      <button class="btn btn-ok btn-sm" onclick="saveOmieApp(1)" style="width:100%"><i class="ti ti-device-floppy"></i> Salvar Empresa 1</button>
+    </div>
+  </div>
+  <!-- App 2 -->
+  <div class="sec">
+    <div class="sec-h"><span class="sec-t"><i class="ti ti-building" style="color:var(--teal)"></i> Empresa 2</span><span id="omie-app2-status"></span></div>
+    <div style="padding:12px;display:grid;gap:8px">
+      <div class="fg"><label>Nome da empresa</label><input type="text" id="omie-app2-name" placeholder="Ex: EGP Brasil"></div>
+      <div class="fg"><label>App Key</label><input type="text" id="omie-app2-key" placeholder="App Key do Omie" autocomplete="off"></div>
+      <div class="fg"><label>App Secret</label><input type="password" id="omie-app2-secret" placeholder="App Secret do Omie" autocomplete="off"></div>
+      <button class="btn btn-ok btn-sm" onclick="saveOmieApp(2)" style="width:100%"><i class="ti ti-device-floppy"></i> Salvar Empresa 2</button>
     </div>
   </div>
 </div>
+
+<!-- URL do Proxy -->
+<div class="sec" style="margin-bottom:14px">
+  <div class="sec-h"><span class="sec-t"><i class="ti ti-server" style="color:var(--teal)"></i> Proxy Supabase (obrigatório para sync)</span></div>
+  <div style="padding:12px">
+    <div class="gr c2" style="gap:10px">
+      <div class="fg" style="grid-column:1/-1">
+        <label>URL da Edge Function (após deploy no Supabase)</label>
+        <input type="text" id="omie-proxy-url-main" placeholder="https://seu-projeto.supabase.co/functions/v1/omie-proxy" value="">
+      </div>
+      <button class="btn btn-ok" onclick="saveOmieProxyMain()" style="grid-column:1/-1"><i class="ti ti-device-floppy"></i> Salvar URL do Proxy</button>
+    </div>
+    <div style="margin-top:8px;font-size:11px;color:var(--text2)">Ainda não configurou? <button class="btn btn-sm" onclick="showOmieProxyModal()" style="font-size:11px"><i class="ti ti-book"></i> Ver instruções passo a passo</button></div>
+  </div>
+</div>
+
 <!-- Metrics -->
 <div class="metrics">
   <div class="mc"><div class="mc-lbl">Contas a Pagar</div><div class="mc-val" id="om-pagar-cnt">—</div><div class="mc-sub" id="om-pagar-sub">não sincronizado</div></div>
@@ -298,8 +332,7 @@ code{font-family:monospace;font-size:10px;background:var(--bg3);padding:1px 4px;
   <div class="mc"><div class="mc-lbl">Fornecedores</div><div class="mc-val" id="om-forn-cnt">—</div><div class="mc-sub" id="om-forn-sub">não sincronizado</div></div>
   <div class="mc"><div class="mc-lbl">Notas Fiscais</div><div class="mc-val" id="om-nf-cnt">—</div><div class="mc-sub" id="om-nf-sub">não sincronizado</div></div>
 </div>
-<!-- CORS warning area -->
-<div id="omie-cors-msg" style="display:none;margin-bottom:10px"></div>
+
 <!-- Tabbed data panel -->
 <div class="sec">
   <div class="sec-h">
@@ -311,12 +344,17 @@ code{font-family:monospace;font-size:10px;background:var(--bg3);padding:1px 4px;
       <span class="chip" id="otab-nf" onclick="omieTab('nf',this)">Notas Fiscais</span>
     </div>
     <div style="display:flex;gap:6px">
-      <button class="btn btn-sm" id="omie-sync-tab-btn" onclick="omieSync()"><i class="ti ti-refresh"></i> Sincronizar aba</button>
+      <select id="omie-sync-empresa" class="btn btn-sm" style="font-size:11px">
+        <option value="all">Ambas as empresas</option>
+        <option value="1">Empresa 1</option>
+        <option value="2">Empresa 2</option>
+      </select>
+      <button class="btn btn-sm" id="omie-sync-tab-btn" onclick="omieSync()"><i class="ti ti-refresh"></i> Sync aba</button>
       <button class="btn btn-sm btn-ok" id="omie-sync-all-btn" onclick="omieSync('all')"><i class="ti ti-cloud-download"></i> Sync tudo</button>
     </div>
   </div>
   <div id="omie-tab-body" style="min-height:80px">
-    <div class="empty"><i class="ti ti-cloud-off"></i>Configure as credenciais e clique em Sync para importar dados do Omie.</div>
+    <div class="empty"><i class="ti ti-cloud-off"></i>Configure o proxy e as credenciais, depois clique em Sync.</div>
   </div>
 </div>
 </div>
@@ -1515,34 +1553,68 @@ function renderNF(){
   </tr>`).join('');
 }
 
-// ── OMIE INTEGRATION ────────────────────────────────────
+// ── OMIE INTEGRATION (two-app) ────────────────────────────────────
 const OMIE_BASE='https://app.omie.com.br/api/v1';
 let activeOmieTab='pagar';
 let omieData={pagar:[],receber:[],extrato:[],forn:[],nf:[],lastSync:{}};
 
-function getOmieCreds(){
-  return {app_key:localStorage.getItem('omie_app_key')||'', app_secret:localStorage.getItem('omie_app_secret')||''};
+function getOmieApp(n){
+  return {
+    name: localStorage.getItem(`omie_app${n}_name`)||`Empresa ${n}`,
+    app_key: localStorage.getItem(`omie_app${n}_key`)||'',
+    app_secret: localStorage.getItem(`omie_app${n}_secret`)||''
+  };
 }
 
-function saveOmieCreds(){
-  const k=(document.getElementById('omie-key').value||'').trim();
-  const s=(document.getElementById('omie-secret').value||'').trim();
-  if(!k||!s){showToast('Informe App Key e App Secret');return;}
-  localStorage.setItem('omie_app_key',k);
-  localStorage.setItem('omie_app_secret',s);
-  document.getElementById('omie-cred-status').innerHTML=`<span class="st sg"><i class="ti ti-check"></i> Credenciais salvas</span>`;
-  showToast('Credenciais Omie salvas!','ok');
+function saveOmieApp(n){
+  const name=(document.getElementById(`omie-app${n}-name`)?.value||'').trim()||`Empresa ${n}`;
+  const k=(document.getElementById(`omie-app${n}-key`)?.value||'').trim();
+  const s=(document.getElementById(`omie-app${n}-secret`)?.value||'').trim();
+  if(!k||!s){showToast(`Informe App Key e App Secret da Empresa ${n}`,'warn');return;}
+  localStorage.setItem(`omie_app${n}_name`,name);
+  localStorage.setItem(`omie_app${n}_key`,k);
+  localStorage.setItem(`omie_app${n}_secret`,s);
+  const el=document.getElementById(`omie-app${n}-status`);
+  if(el) el.innerHTML=`<span class="st sg"><i class="ti ti-check"></i> Salvo</span>`;
+  showToast(`${name} salvo!`,'ok');
 }
+
+function saveOmieProxyMain(){
+  const url=(document.getElementById('omie-proxy-url-main')?.value||'').trim();
+  if(!url){showToast('Informe a URL da Edge Function','warn');return;}
+  localStorage.setItem('omie_proxy_url',url);
+  const el=document.getElementById('omie-proxy-status');
+  if(el) el.innerHTML=`<span class="st sg"><i class="ti ti-check"></i> Proxy configurado</span>`;
+  showToast('URL do proxy salva!','ok');
+}
+
+// Keep backward compat
+function getOmieCreds(){ return getOmieApp(1); }
+function saveOmieCreds(){ saveOmieApp(1); }
 
 function initOmieCreds(){
-  const {app_key,app_secret}=getOmieCreds();
-  const keyEl=document.getElementById('omie-key');
-  const secEl=document.getElementById('omie-secret');
-  if(keyEl&&app_key) keyEl.value=app_key;
-  if(secEl&&app_secret) secEl.value=app_secret;
-  const statusEl=document.getElementById('omie-cred-status');
-  if(statusEl&&app_key&&app_secret){
-    statusEl.innerHTML=`<span class="st sg"><i class="ti ti-check"></i> Credenciais configuradas</span>`;
+  // Restore fields from localStorage
+  for(const n of [1,2]){
+    const app=getOmieApp(n);
+    const nameEl=document.getElementById(`omie-app${n}-name`);
+    const keyEl=document.getElementById(`omie-app${n}-key`);
+    const secEl=document.getElementById(`omie-app${n}-secret`);
+    if(nameEl&&app.name!==`Empresa ${n}`) nameEl.value=app.name;
+    if(keyEl&&app.app_key) keyEl.value=app.app_key;
+    if(secEl&&app.app_secret) secEl.value=app.app_secret;
+    const statusEl=document.getElementById(`omie-app${n}-status`);
+    if(statusEl&&app.app_key&&app.app_secret){
+      statusEl.innerHTML=`<span class="st sg"><i class="ti ti-check"></i> Configurado</span>`;
+    }
+  }
+  const proxyUrl=localStorage.getItem('omie_proxy_url')||'';
+  const proxyEl=document.getElementById('omie-proxy-url-main');
+  if(proxyEl&&proxyUrl) proxyEl.value=proxyUrl;
+  const proxyStatus=document.getElementById('omie-proxy-status');
+  if(proxyStatus){
+    proxyStatus.innerHTML=proxyUrl
+      ?`<span class="st sg"><i class="ti ti-check"></i> Proxy configurado</span>`
+      :`<span class="st sr"><i class="ti ti-x"></i> Proxy não configurado</span>`;
   }
 }
 
@@ -1553,36 +1625,26 @@ function fmtOmieDate(s){
   return fmtDate(s);
 }
 
-async function omieCallDirect(endpoint,call,params={}){
-  const {app_key,app_secret}=getOmieCreds();
-  if(!app_key||!app_secret) throw new Error('sem_creds');
-  const res=await fetch(`${OMIE_BASE}/${endpoint}/`,{
+async function omieCallForApp(appN, endpoint, call, params={}){
+  const {app_key,app_secret}=getOmieApp(appN);
+  if(!app_key||!app_secret) throw new Error(`sem_creds_${appN}`);
+  const proxyUrl=localStorage.getItem('omie_proxy_url');
+  if(!proxyUrl) throw new Error('sem_proxy');
+  const res=await fetch(proxyUrl,{
     method:'POST',
     headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({call,app_key,app_secret,param:[params]})
+    body:JSON.stringify({endpoint,call,app_key,app_secret,params})
   });
-  if(!res.ok) throw new Error(`HTTP ${res.status}`);
+  if(!res.ok) throw new Error(`Proxy HTTP ${res.status}`);
   const data=await res.json();
   if(data.faultcode) throw new Error(data.faultstring||data.faultcode);
+  if(data.error) throw new Error(data.error);
   return data;
 }
 
-async function omieCallProxied(endpoint,call,params={}){
-  const proxyUrl=localStorage.getItem('omie_proxy_url');
-  if(proxyUrl){
-    const {app_key,app_secret}=getOmieCreds();
-    const res=await fetch(proxyUrl,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({endpoint,call,app_key,app_secret,params})
-    });
-    if(!res.ok) throw new Error(`Proxy HTTP ${res.status}`);
-    const data=await res.json();
-    if(data.faultcode) throw new Error(data.faultstring||data.faultcode);
-    return data;
-  }
-  return omieCallDirect(endpoint,call,params);
-}
+// Keep for backward compat – uses app 1
+async function omieCallDirect(e,c,p={}){ return omieCallForApp(1,e,c,p); }
+async function omieCallProxied(e,c,p={}){ return omieCallForApp(1,e,c,p); }
 
 function showOmieCorsError(){
   const proxyCode=`import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -1701,9 +1763,18 @@ function renderOmieTab(){
   }
 }
 
+function empresaTag(nome){
+  // Color alternates between two styles for the two companies
+  const colors=['var(--pbg)','var(--tbg)'];
+  const txts=['var(--ptxt)','var(--ttxt)'];
+  const idx=nome&&nome.includes('2')?1:0;
+  return `<span class="tag" style="font-size:10px;background:${colors[idx]};color:${txts[idx]}">${nome||'—'}</span>`;
+}
+
 function renderPagarTable(rows){
-  return `<table><thead><tr><th>Vencimento</th><th>Fornecedor</th><th>Nº Documento</th><th>Valor</th><th>Status</th><th>Categoria</th></tr></thead><tbody>${
+  return `<table><thead><tr><th>Empresa</th><th>Vencimento</th><th>Fornecedor</th><th>Nº Doc.</th><th>Valor</th><th>Status</th><th>Categoria</th></tr></thead><tbody>${
     rows.map(r=>`<tr>
+      <td style="font-size:11px">${empresaTag(r.empresa)}</td>
       <td style="font-size:11px">${fmtOmieDate(r.data_vencimento)}</td>
       <td>${r.nome_fornecedor||'—'}</td>
       <td style="font-size:11px;color:var(--text2)">${r.numero_documento||'—'}</td>
@@ -1715,8 +1786,9 @@ function renderPagarTable(rows){
 }
 
 function renderReceberTable(rows){
-  return `<table><thead><tr><th>Vencimento</th><th>Cliente</th><th>Nº Documento</th><th>Valor</th><th>Status</th></tr></thead><tbody>${
+  return `<table><thead><tr><th>Empresa</th><th>Vencimento</th><th>Cliente</th><th>Nº Doc.</th><th>Valor</th><th>Status</th></tr></thead><tbody>${
     rows.map(r=>`<tr>
+      <td style="font-size:11px">${empresaTag(r.empresa)}</td>
       <td style="font-size:11px">${fmtOmieDate(r.data_vencimento)}</td>
       <td>${r.nome_cliente||'—'}</td>
       <td style="font-size:11px;color:var(--text2)">${r.numero_documento||'—'}</td>
@@ -1727,8 +1799,9 @@ function renderReceberTable(rows){
 }
 
 function renderExtratoTable(rows){
-  return `<table><thead><tr><th>Data</th><th>Descrição</th><th>Valor</th><th>Tipo</th><th>Conta</th></tr></thead><tbody>${
+  return `<table><thead><tr><th>Empresa</th><th>Data</th><th>Descrição</th><th>Valor</th><th>Tipo</th><th>Conta</th></tr></thead><tbody>${
     rows.map(r=>`<tr>
+      <td style="font-size:11px">${empresaTag(r.empresa)}</td>
       <td style="font-size:11px">${fmtOmieDate(r.data_lancamento)}</td>
       <td>${r.descricao||'—'}</td>
       <td style="font-weight:500;color:${r.valor<0?'var(--red)':'var(--teal)'}">${fmt(Math.abs(r.valor||0))}</td>
@@ -1739,9 +1812,10 @@ function renderExtratoTable(rows){
 }
 
 function renderFornOmieTable(rows){
-  return `<table><thead><tr><th>Razão Social</th><th>CNPJ/CPF</th><th>Cidade</th><th>E-mail</th><th>Telefone</th></tr></thead><tbody>${
+  return `<table><thead><tr><th>Empresa</th><th>Razão Social</th><th>CNPJ/CPF</th><th>Cidade</th><th>E-mail</th><th>Telefone</th></tr></thead><tbody>${
     rows.map(r=>`<tr>
-      <td><strong>${r.razao_social||r.nome_fantasia||'—'}</strong></td>
+      <td style="font-size:11px">${empresaTag(r.empresa)}</td>
+      <td><strong>${r.razao_social||'—'}</strong></td>
       <td style="font-size:11px;color:var(--text2)">${r.cnpj_cpf||'—'}</td>
       <td style="font-size:11px">${r.cidade||'—'}</td>
       <td style="font-size:11px;color:var(--text2)">${r.email||'—'}</td>
@@ -1751,8 +1825,9 @@ function renderFornOmieTable(rows){
 }
 
 function renderNFOmieTable(rows){
-  return `<table><thead><tr><th>Número</th><th>Emissão</th><th>Tomador</th><th>Valor</th><th>Status</th></tr></thead><tbody>${
+  return `<table><thead><tr><th>Empresa</th><th>Número</th><th>Emissão</th><th>Tomador</th><th>Valor</th><th>Status</th></tr></thead><tbody>${
     rows.map(r=>`<tr>
+      <td style="font-size:11px">${empresaTag(r.empresa)}</td>
       <td style="font-weight:500">${r.numero||'—'}</td>
       <td style="font-size:11px">${fmtOmieDate(r.data_emissao)}</td>
       <td>${r.nome_tomador||'—'}</td>
@@ -1764,60 +1839,83 @@ function renderNFOmieTable(rows){
 
 async function omieSync(type){
   const tab=(type&&type!=='tab')?type:activeOmieTab;
-  const {app_key,app_secret}=getOmieCreds();
-  if(!app_key||!app_secret){showToast('Configure as credenciais do Omie primeiro','warn');return;}
+  const proxyUrl=localStorage.getItem('omie_proxy_url');
+
+  // Pre-check: proxy configured?
+  if(!proxyUrl){
+    showToast('Configure a URL do Proxy Supabase antes de sincronizar','warn');
+    showOmieProxyModal();
+    return;
+  }
+
+  // Which apps to sync?
+  const empresaSel=document.getElementById('omie-sync-empresa')?.value||'all';
+  const appsToSync=empresaSel==='all'?[1,2]:empresaSel==='1'?[1]:[2];
+  // Filter to apps that have credentials
+  const validApps=appsToSync.filter(n=>{ const a=getOmieApp(n); return a.app_key&&a.app_secret; });
+  if(!validApps.length){
+    showToast('Configure as credenciais das empresas primeiro','warn');
+    return;
+  }
 
   const tabs=tab==='all'?['pagar','receber','extrato','forn','nf']:[tab];
-  const tabNames={pagar:'Contas a Pagar',receber:'Contas a Receber',extrato:'Extrato',forn:'Fornecedores',nf:'Notas Fiscais'};
 
-  // Disable buttons
   const btnTab=document.getElementById('omie-sync-tab-btn');
   const btnAll=document.getElementById('omie-sync-all-btn');
   if(btnTab){btnTab.disabled=true;btnTab.innerHTML='<i class="ti ti-loader"></i> Buscando...';}
   if(btnAll){btnAll.disabled=true;}
 
-  let corsBlocked=false;
   let errors=[];
 
-  for(const t of tabs){
-    try{
-      if(t==='pagar')    await omieFetchPagar();
-      else if(t==='receber') await omieFetchReceber();
-      else if(t==='extrato') await omieFetchExtrato();
-      else if(t==='forn')    await omieFetchFornecedores();
-      else if(t==='nf')      await omieFetchNF();
-      omieData.lastSync[t]=new Date().toLocaleString('pt-BR');
-    }catch(e){
-      const msg=e.message||'';
-      if(msg.includes('Failed to fetch')||msg.includes('NetworkError')||msg.includes('CORS')||msg.includes('ERR_NETWORK')){
-        corsBlocked=true;
-      } else {
-        errors.push(`${tabNames[t]}: ${msg}`);
+  // Clear data arrays before syncing
+  if(tab==='all') omieData={pagar:[],receber:[],extrato:[],forn:[],nf:[],lastSync:{}};
+
+  for(const appN of validApps){
+    const appName=getOmieApp(appN).name;
+    for(const t of tabs){
+      try{
+        if(t==='pagar')    await omieFetchPagar(appN, appName);
+        else if(t==='receber') await omieFetchReceber(appN, appName);
+        else if(t==='extrato') await omieFetchExtrato(appN, appName);
+        else if(t==='forn')    await omieFetchFornecedores(appN, appName);
+        else if(t==='nf')      await omieFetchNF(appN, appName);
+        omieData.lastSync[t]=new Date().toLocaleString('pt-BR');
+      }catch(e){
+        const msg=e.message||'';
+        if(msg==='sem_proxy'){
+          errors.push(`Proxy não configurado`);
+        } else if(msg.includes('sem_creds')){
+          errors.push(`Credenciais da Empresa ${appN} não configuradas`);
+        } else if(msg.includes('Failed to fetch')||msg.includes('NetworkError')){
+          errors.push(`Não foi possível conectar ao proxy. Verifique a URL.`);
+        } else {
+          errors.push(`${appName} / ${t}: ${msg}`);
+        }
       }
     }
   }
 
-  if(btnTab){btnTab.disabled=false;btnTab.innerHTML='<i class="ti ti-refresh"></i> Sincronizar aba';}
+  if(btnTab){btnTab.disabled=false;btnTab.innerHTML='<i class="ti ti-refresh"></i> Sync aba';}
   if(btnAll){btnAll.disabled=false;}
 
-  if(corsBlocked){
-    showOmieCorsError();
-  } else if(errors.length){
+  if(errors.length){
+    // Show first error prominently
     showToast(errors[0],'err');
+    console.error('Omie sync errors:', errors);
   } else {
-    showToast(tab==='all'?'Todos os dados sincronizados!':'Dados sincronizados!','ok');
-    document.getElementById('omie-cors-msg').style.display='none';
+    showToast(validApps.length>1?`Ambas as empresas sincronizadas!`:`${getOmieApp(validApps[0]).name} sincronizado!`,'ok');
   }
 
   renderOmie();
 }
 
-async function omieFetchPagar(){
-  const data=await omieCallProxied('financas/contapagar','ListarContasPagar',{
+async function omieFetchPagar(appN=1, appName='Empresa'){
+  const data=await omieCallForApp(appN,'financas/contapagar','ListarContasPagar',{
     pagina:1,registros_por_pagina:100,filtrar_por_status:'TODOS'
   });
   const lista=data.lista_conta_pagar||data.cadastros||[];
-  omieData.pagar=lista.map(r=>({
+  const items=lista.map(r=>({
+    empresa:appName,
     data_vencimento:r.data_vencimento||r.dDtVenc||'',
     nome_fornecedor:r.nome_fornecedor||r.cNomeFornecedor||'',
     numero_documento:r.numero_documento||r.cNumDocumento||'',
@@ -1825,6 +1923,8 @@ async function omieFetchPagar(){
     status_titulo:(r.status_titulo||r.cStatus||'A_VENCER').toUpperCase(),
     categoria:r.categorias?.[0]?.cDescricao||r.codigo_categoria||''
   }));
+  // Merge: remove previous entries for this app, add new ones
+  omieData.pagar=omieData.pagar.filter(r=>r.empresa!==appName).concat(items);
   const cnt=document.getElementById('om-pagar-cnt');
   const sub=document.getElementById('om-pagar-sub');
   if(cnt) cnt.textContent=omieData.pagar.length;
@@ -1835,18 +1935,20 @@ async function omieFetchPagar(){
   }
 }
 
-async function omieFetchReceber(){
-  const data=await omieCallProxied('financas/contareceber','ListarContasReceber',{
+async function omieFetchReceber(appN=1, appName='Empresa'){
+  const data=await omieCallForApp(appN,'financas/contareceber','ListarContasReceber',{
     pagina:1,registros_por_pagina:100,filtrar_por_status:'TODOS'
   });
   const lista=data.lista_conta_receber||data.cadastros||[];
-  omieData.receber=lista.map(r=>({
+  const items=lista.map(r=>({
+    empresa:appName,
     data_vencimento:r.data_vencimento||r.dDtVenc||'',
     nome_cliente:r.nome_cliente||r.cNomeCliente||'',
     numero_documento:r.numero_documento||r.cNumDocumento||'',
     valor_documento:parseFloat(r.valor_documento||r.nValDoc||0),
     status_titulo:(r.status_titulo||r.cStatus||'A_RECEBER').toUpperCase()
   }));
+  omieData.receber=omieData.receber.filter(r=>r.empresa!==appName).concat(items);
   const cnt=document.getElementById('om-receber-cnt');
   const sub=document.getElementById('om-receber-sub');
   if(cnt) cnt.textContent=omieData.receber.length;
@@ -1857,51 +1959,53 @@ async function omieFetchReceber(){
   }
 }
 
-async function omieFetchExtrato(){
-  const data=await omieCallProxied('financas/extrato','ListarExtrato',{
+async function omieFetchExtrato(appN=1, appName='Empresa'){
+  const data=await omieCallForApp(appN,'financas/extrato','ListarExtrato',{
     pagina:1,registros_por_pagina:100
   });
   const lista=data.extrato||data.lancamentos||data.lista_extrato||[];
-  omieData.extrato=lista.map(r=>({
+  const items=lista.map(r=>({
+    empresa:appName,
     data_lancamento:r.data_lancamento||r.dDataLanc||'',
     descricao:r.descricao||r.cDescricao||'',
     valor:parseFloat(r.valor||r.nValor||0),
     tipo:r.tipo||r.cTipo||'',
     conta:r.conta||r.cConta||''
   }));
+  omieData.extrato=omieData.extrato.filter(r=>r.empresa!==appName).concat(items);
 }
 
-async function omieFetchFornecedores(){
-  const data=await omieCallProxied('geral/clientes','ListarClientes',{
+async function omieFetchFornecedores(appN=1, appName='Empresa'){
+  const data=await omieCallForApp(appN,'geral/clientes','ListarClientes',{
     pagina:1,registros_por_pagina:100,clientesFiltro:{},clientesPorCodigo:{},exibir_caracteristica:'N',inativo:'N'
   });
   const lista=data.clientes_cadastro||data.ClientesFull||[];
-  omieData.forn=lista.map(r=>{
+  const items=lista.map(r=>{
     const c=r.cliente_cadastro||r;
     return {
+      empresa:appName,
       razao_social:c.razao_social||c.nome_fantasia||'',
-      nome_fantasia:c.nome_fantasia||'',
       cnpj_cpf:c.cnpj_cpf||'',
       cidade:c.cidade||'',
       email:c.email||'',
-      telefone:c.telefone1_numero||c.telefone1_ddd?`(${c.telefone1_ddd}) ${c.telefone1_numero}`:'',
+      telefone:c.telefone1_ddd?`(${c.telefone1_ddd}) ${c.telefone1_numero||''}`:c.telefone1_numero||''
     };
   });
+  omieData.forn=omieData.forn.filter(r=>r.empresa!==appName).concat(items);
   const cnt=document.getElementById('om-forn-cnt');
   const sub=document.getElementById('om-forn-sub');
   if(cnt) cnt.textContent=omieData.forn.length;
   if(sub){sub.textContent='Atualizado';sub.className='mc-sub up';}
 }
 
-async function omieFetchNF(){
-  // Try NFS-e (services) first
-  let lista=[];
+async function omieFetchNF(appN=1, appName='Empresa'){
+  let items=[];
   try{
-    const data=await omieCallProxied('servicos/nfse','ListarNFSe',{
+    const data=await omieCallForApp(appN,'servicos/nfse','ListarNFSe',{
       pagina:1,registros_por_pagina:50,dDtInicial:'01/01/2025',dDtFinal:'31/12/2026'
     });
-    lista=data.nfseEncontradas||data.listaNFSe||[];
-    omieData.nf=lista.map(r=>({
+    items=(data.nfseEncontradas||data.listaNFSe||[]).map(r=>({
+      empresa:appName,
       numero:r.nNumNFSe||r.numero_nfse||'',
       data_emissao:r.dDtEmissao||r.data_emissao||'',
       nome_tomador:r.cRazaoSocialTomador||r.nome_tomador||'',
@@ -1909,19 +2013,19 @@ async function omieFetchNF(){
       status:(r.cSitNFSe||r.status_nfse||'AUTORIZADO').toUpperCase()
     }));
   }catch{
-    // fallback: NF-e produtos
-    const data=await omieCallProxied('produtos/nfconsultar','ListarNFC',{
-      pagina:1,registros_por_pagina:50
-    });
-    lista=data.nfCadastro||data.listaNFe||[];
-    omieData.nf=lista.map(r=>({
-      numero:r.nNFe||r.numero_nfe||'',
-      data_emissao:r.dDtEmissao||r.data_emissao||'',
-      nome_tomador:r.xNome||r.nome_destinatario||'',
-      valor_servicos:parseFloat(r.vNF||r.valor_nfe||0),
-      status:(r.cSitNFe||r.status_nfe||'AUTORIZADO').toUpperCase()
-    }));
+    try{
+      const data=await omieCallForApp(appN,'produtos/nfconsultar','ListarNFC',{pagina:1,registros_por_pagina:50});
+      items=(data.nfCadastro||data.listaNFe||[]).map(r=>({
+        empresa:appName,
+        numero:r.nNFe||r.numero_nfe||'',
+        data_emissao:r.dDtEmissao||r.data_emissao||'',
+        nome_tomador:r.xNome||r.nome_destinatario||'',
+        valor_servicos:parseFloat(r.vNF||r.valor_nfe||0),
+        status:(r.cSitNFe||r.status_nfe||'AUTORIZADO').toUpperCase()
+      }));
+    }catch(e2){ throw e2; }
   }
+  omieData.nf=omieData.nf.filter(r=>r.empresa!==appName).concat(items);
   const cnt=document.getElementById('om-nf-cnt');
   const sub=document.getElementById('om-nf-sub');
   if(cnt) cnt.textContent=omieData.nf.length;
