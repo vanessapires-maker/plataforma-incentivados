@@ -1242,7 +1242,73 @@ function renderPayments(){
   }).join('')||`<tr><td colspan="8"><div class="empty"><i class="ti ti-receipt"></i>Nenhuma solicitação nesta categoria</div></td></tr>`;
 }
 
-function approveP(id){const p=DB.payments.find(x=>x.id===id);if(p)p.status='approved';addAudit('APPROVE',`PaymentRequest #${id}`);updateBadge();renderPayments();renderApprovals();renderDashboard();showToast('Pagamento aprovado!');}
+function approveP(id){
+  const p=DB.payments.find(x=>x.id===id);
+  if(!p)return;
+  p.status='approved';
+  addAudit('APPROVE',`PaymentRequest #${id}`);
+  updateBadge();renderPayments();renderApprovals();renderDashboard();
+  // Check if a contract already exists for this vendor+project
+  const already=DB.contracts.find(c=>c.vendor_id===p.vendor_id&&c.proj_id===p.proj_id);
+  const vendor=DB.vendors.find(v=>v.id===p.vendor_id)||{};
+  const proj=DB.projects.find(pr=>pr.id===p.proj_id)||{};
+  document.getElementById('modal').innerHTML=`
+  <div class="modal" style="max-width:480px">
+    <div class="mh" style="background:var(--tbg);border-bottom-color:#9FE1CB">
+      <h3 style="color:var(--ttxt)"><i class="ti ti-circle-check" style="font-size:18px"></i> Pagamento aprovado!</h3>
+      <button class="btn btn-sm" onclick="closeModal()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="mb" style="padding:18px">
+      <div style="font-size:13px;margin-bottom:14px">
+        <strong>${p.vendor}</strong> · ${fmt(p.gross)} · ${p.rubrica}
+        <div style="font-size:11px;color:var(--text2);margin-top:3px">${proj.name||''}</div>
+      </div>
+      ${already
+        ?`<div class="alert al-w"><i class="ti ti-alert-circle"></i> Já existe um contrato com este fornecedor neste projeto (<strong>${already.doc}</strong>). Deseja criar um contrato adicional mesmo assim?</div>`
+        :`<div class="alert al-i"><i class="ti ti-file-text"></i> O próximo passo é formalizar o contrato com o fornecedor antes de realizar o pagamento.</div>`
+      }
+    </div>
+    <div class="mf" style="justify-content:space-between">
+      <button class="btn btn-sm" onclick="closeModal()">Não agora</button>
+      <button class="btn btn-sm btn-p" onclick="closeModal();openContractFromPayment(${id})"><i class="ti ti-file-plus"></i> Gerar contrato agora</button>
+    </div>
+  </div>`;
+  document.getElementById('modal').style.display='flex';
+}
+
+function openContractFromPayment(paymentId){
+  const p=DB.payments.find(x=>x.id===paymentId);
+  if(!p)return;
+  const vendor=DB.vendors.find(v=>v.id===p.vendor_id)||{};
+  navigate('contracts');
+  openModal('contract');
+  // Pre-fill after DOM renders
+  setTimeout(()=>{
+    const docInput=document.getElementById('fc-vdoc');
+    if(docInput&&vendor.doc){
+      docInput.value=vendor.doc;
+      lookupVendorForContract(vendor.doc);
+    }
+    // Pre-fill project and value after lookup populates details
+    setTimeout(()=>{
+      const projSel=document.getElementById('fc-proj');
+      if(projSel&&p.proj_id){
+        projSel.value=p.proj_id;
+      }
+      const valorInput=document.getElementById('fc-valor');
+      if(valorInput&&p.gross)valorInput.value=p.gross;
+      const objetoInput=document.getElementById('fc-objeto');
+      if(objetoInput&&p.rubrica)objetoInput.value=`${p.rubrica} — conforme solicitação de pagamento aprovada`;
+      // Set contract type based on payment service
+      const tipoSel=document.getElementById('fc-tipo');
+      if(tipoSel){
+        const svcMap={cache_artistico:'Cachê artístico',servicos_pj:'Prestação de serviços',servicos_pf:'Prestação de serviços'};
+        if(svcMap[p.service])tipoSel.value=svcMap[p.service];
+      }
+    },200);
+  },100);
+}
+
 function rejectP(id){const p=DB.payments.find(x=>x.id===id);if(p)p.status='rejected';addAudit('REJECT',`PaymentRequest #${id}`);updateBadge();renderPayments();renderApprovals();renderDashboard();showToast('Rejeitado','var(--red)');}
 function updateBadge(){const n=DB.payments.filter(p=>p.status==='pending').length;document.getElementById('nb-ap').textContent=n;document.getElementById('ap-msg').textContent=`${n} solicitações aguardando aprovação — nível 1 (Coordenador Financeiro)`;}
 
