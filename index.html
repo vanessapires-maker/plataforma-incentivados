@@ -2463,7 +2463,7 @@ function renderPayments(){
       <td style="font-size:11px">${p.rubrica}</td>
       <td>${fmt(p.gross)}</td>
       <td><strong>${fmt(t.net)}</strong></td>
-      <td>${badge(p.status)}${!p.cnae_ok?'<span class="st sr" style="margin-left:4px;font-size:10px">CNAE ⚠</span>':''}</td>
+      <td>${badge(p.status)}${!p.cnae_ok?'<span class="st sr" style="margin-left:4px;font-size:10px">CNAE ⚠</span>':''}${p.board_required?`<span class="st" style="margin-left:4px;font-size:10px;background:#fef3c7;color:#78350f;border:1px solid #fcd34d" title="${p.board_required_reason||'Requer aprovação da Diretoria'}">🏛 Diretoria</span>`:''}</td>
       <td style="display:flex;gap:4px">
         <button class="btn btn-sm" onclick="viewPayment(${p.id})"><i class="ti ti-eye"></i></button>
       </td>
@@ -2594,6 +2594,7 @@ function kanbanCard(p, colId){
       ${t.net<p.gross?`<div style="font-size:10px;color:var(--teal)">→ ${fmt(t.net)} líq.</div>`:''}
     </div>
     ${warnCnae}
+    ${p.board_required?`<div style="font-size:10px;background:#fef3c7;color:#78350f;border:1px solid #fcd34d;border-radius:4px;padding:3px 6px;margin-top:3px" title="${p.board_required_reason||''}"><i class="ti ti-building-community"></i> Requer aprovação da Diretoria</div>`:''}
     ${comprTag}
     ${p.nf_num?`<div style="font-size:10px;color:#16A34A;margin-top:2px"><i class="ti ti-file-invoice"></i> NF ${p.nf_num}</div>`:''}
     ${p.pay_date?`<div style="font-size:10px;color:var(--teal);margin-top:2px"><i class="ti ti-calendar-check"></i> Pago em ${fmtDate(p.pay_date)}</div>`:''}
@@ -5457,6 +5458,18 @@ function saveModal(){
       const payForma=document.getElementById('f-pay-forma')?.value||'integral';
       // Verifica saldo da rubrica
       const rubObj=DB.rubricas?.find(r=>r.proj_id===projId&&r.rubrica===rub);
+      const proj=DB.projects.find(p=>p.id===projId)||{};
+      const unitVal=rubObj?.unit||0;
+      const totalAprov=rubObj?.aprovado||0;
+      const isEsporte=proj.law==='esporte';
+      // ── Regra 1: Lei Esporte — valor deve ser exatamente o unitário ──
+      if(isEsporte&&unitVal>0&&Math.abs(g-unitVal)>0.01){
+        showToast(`⛔ Lei de Incentivo ao Esporte: o valor solicitado deve ser exatamente o valor unitário da rubrica (R$ ${fmt(unitVal)}). Valor informado: R$ ${fmt(g)}.`,'var(--red)');
+        return false;
+      }
+      // ── Regra 2: Saldo da rubrica ──
+      let boardRequired=false;
+      let boardReason='';
       if(rubObj){
         const orcado=rubObj.aprovado||rubObj.valor||0;
         const jaUsado=DB.payments
@@ -5466,6 +5479,11 @@ function saveModal(){
         if(g>disponivel){
           showToast(`Saldo insuficiente na rubrica "${rub}": aprovado ${fmt(orcado)} | já utilizado ${fmt(jaUsado)} | disponível ${fmt(disponivel)} | solicitado ${fmt(g)}.`,'var(--red)');
           return false;
+        }
+        // ── Regra 3: Valor fora do unitário — exige aprovação Diretoria ──
+        if(unitVal>0&&Math.abs(g-unitVal)>0.01){
+          boardRequired=true;
+          boardReason=`Valor solicitado (R$ ${fmt(g)}) difere do valor unitário da rubrica (R$ ${fmt(unitVal)} | total aprovado: R$ ${fmt(totalAprov)})`;
         }
       }
       DB.payments.push({
@@ -5486,10 +5504,15 @@ function saveModal(){
         pay_date2:payForma==='50_50'?(document.getElementById('f-pay-date2')?.value||''):'',
         cnae_ok:vendor?.cnae_ok!==false,
         saldo_ok:true,
+        board_required:boardRequired,
+        board_required_reason:boardReason,
         requester:document.getElementById('f-requester')?.value?.trim()||'',
         obs:document.getElementById('f-pay-obs')?.value?.trim()||'',
       });
-      addAudit('CREATE',`PaymentRequest "${v}" — ${rub}`);
+      if(boardRequired){
+        showToast(`⚠️ Solicitação criada — requer autorização da Diretoria antes do pagamento. Motivo: ${boardReason}`,'var(--amber)',6000);
+      }
+      addAudit('CREATE',`PaymentRequest "${v}" — ${rub}${boardRequired?' [REQUER DIRETORIA]':''}`);
       renderPayments();renderApprovals();renderDashboard();updateBadge();return true;
     },
     vendor:()=>{
@@ -5737,14 +5760,15 @@ function getForm(type){
         <div class="fg"><label>Projeto</label><select id="f-proj" onchange="loadRubricasForPayment(this.value);setupTax()">${DB.projects.map(p=>`<option value="${p.id}">${p.name.substring(0,35)}</option>`).join('')}</select></div>
       </div>
       <div class="fg" style="margin-top:10px"><label>Rubrica</label>
-        <select id="f-rub" style="width:100%" onchange="setupTax()"></select>
+        <select id="f-rub" style="width:100%" onchange="setupTax();checkUnitHint()"></select>
       </div>
       <div class="gr c3" style="margin-top:10px">
         <div class="fg"><label>Tipo de serviço</label><select id="f-service" onchange="setupTax()"><option value="cache_artistico">Cachê artístico</option><option value="servicos_pf">Serviços PF</option><option value="servicos_pj">Serviços PJ</option><option value="equipamento">Equipamentos</option><option value="locacao">Locação</option></select></div>
         <div class="fg"><label>Pessoa</label><select id="f-person" onchange="setupTax()"><option value="pf">Física (PF)</option><option value="pj">Jurídica (PJ)</option></select></div>
         <div class="fg"><label>Regime tributário</label><select id="f-regime" onchange="setupTax()"><option value="">—</option><option value="simples_nacional">Simples Nacional</option><option value="lucro_presumido">Lucro Presumido</option><option value="lucro_real">Lucro Real</option></select></div>
       </div>
-      <div class="fg" style="margin-top:10px"><label>Valor bruto (R$) *</label><input type="number" id="f-gross" placeholder="Ex: 10000" oninput="setupTax()"></div>
+      <div class="fg" style="margin-top:10px"><label>Valor bruto (R$) *</label><input type="number" id="f-gross" placeholder="Ex: 10000" oninput="setupTax();checkUnitHint()"></div>
+      <div id="unit-hint" style="display:none;margin-top:4px;padding:7px 10px;border-radius:6px;font-size:12px;line-height:1.4"></div>
       <div class="gr c2" style="margin-top:10px">
         <div class="fg"><label>Data para pagamento *</label><input type="date" id="f-pay-date"></div>
         <div class="fg"><label>Forma de pagamento *</label><select id="f-pay-forma" onchange="document.getElementById('f-pay-parcela2-wrap').style.display=this.value==='50_50'?'block':'none'">
@@ -6242,6 +6266,41 @@ function setupTax(){
   }
 }
 
+// ── Validação valor unitário no modal de pagamento ────────────────────────────
+function checkUnitHint(){
+  const hintEl=document.getElementById('unit-hint');
+  if(!hintEl)return;
+  const g=parseFloat(document.getElementById('f-gross')?.value||0);
+  const pid=parseInt(document.getElementById('f-proj')?.value||0);
+  const rub=document.getElementById('f-rub')?.value||'';
+  if(!g||!pid||!rub){hintEl.style.display='none';return;}
+  const rubObj=DB.rubricas?.find(r=>r.proj_id===pid&&r.rubrica===rub);
+  const proj=DB.projects.find(p=>p.id===pid)||{};
+  const unit=rubObj?.unit||0;
+  const totalAprovado=rubObj?.aprovado||0;
+  const isEsporte=proj.law==='esporte';
+  if(!rubObj||unit<=0){
+    // Sem rubrica com valor unitário cadastrado → sem restrição de unitário
+    hintEl.style.display='none';
+    return;
+  }
+  const match=(Math.abs(g-unit)<0.01);
+  if(match){
+    hintEl.style.display='block';
+    hintEl.style.background='#d1fae5';hintEl.style.color='#065f46';hintEl.style.border='1px solid #6ee7b7';
+    hintEl.innerHTML=`<strong>✓ Valor igual ao unitário da rubrica</strong> — R$ ${fmt(unit)}`;
+  } else {
+    hintEl.style.display='block';
+    if(isEsporte){
+      hintEl.style.background='#fee2e2';hintEl.style.color='#7f1d1d';hintEl.style.border='1px solid #fca5a5';
+      hintEl.innerHTML=`<strong>⛔ Lei de Incentivo ao Esporte — valor obrigatoriamente igual ao unitário da rubrica:</strong> R$ ${fmt(unit)}. Valor solicitado (R$ ${fmt(g)}) não será aceito.`;
+    } else {
+      hintEl.style.background='#fef3c7';hintEl.style.color='#78350f';hintEl.style.border='1px solid #fcd34d';
+      hintEl.innerHTML=`<strong>⚠️ Valor fora do unitário da rubrica</strong> (unitário: R$ ${fmt(unit)} | total aprovado: R$ ${fmt(totalAprovado)}). Esta solicitação exigirá <strong>autorização da Diretoria</strong> antes de ser paga.`;
+    }
+  }
+}
+
 function viewPayment(id){
   const p=DB.payments.find(x=>x.id===id); if(!p)return;
   const t=calcTax(p.gross,p.service,p.personType,p.taxRegime); const tot=t.iss+t.ir+t.inss+t.pis;
@@ -6253,6 +6312,7 @@ function viewPayment(id){
     <div><div style="font-size:11px;color:var(--text2)">Rubrica</div>${p.rubrica}</div>
     <div><div style="font-size:11px;color:var(--text2)">Tipo</div>${p.personType.toUpperCase()} — ${p.service.replace(/_/g,' ')}</div>
   </div>
+  ${p.board_required?`<div style="padding:10px 12px;background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;margin-bottom:10px;font-size:12px;color:#78350f"><strong>🏛 Requer autorização da Diretoria</strong><br>${p.board_required_reason||'Valor fora do unitário ou total da rubrica'}</div>`:''}
   ${buildSemaphore(p.gross,p.service,p.personType,p.taxRegime,p.proj_id,p.rubrica,1)}
   <div class="tax-box" style="margin-top:10px">
     <div class="tr"><span>Valor bruto</span><span>${fmt(p.gross)}</span></div>
