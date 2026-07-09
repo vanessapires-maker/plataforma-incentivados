@@ -5502,7 +5502,8 @@ function saveModal(){
         pay_date:payDate,
         pay_forma:payForma,
         pay_date2:payForma==='50_50'?(document.getElementById('f-pay-date2')?.value||''):'',
-        cnae_ok:vendor?.cnae_ok!==false,
+        cnae_ok:(()=>{const _svc=document.getElementById('f-service')?.value||'cache_artistico';const _rub=document.getElementById('f-rub')?.value||'';const _chk=checkCNAECompatibility(vendor,_svc,_rub);return _chk.ok!==false;})(),
+        cnae_detail:(()=>{const _svc=document.getElementById('f-service')?.value||'cache_artistico';const _rub=document.getElementById('f-rub')?.value||'';return checkCNAECompatibility(vendor,_svc,_rub).detail||'';})(),
         saldo_ok:true,
         board_required:boardRequired,
         board_required_reason:boardReason,
@@ -5760,10 +5761,11 @@ function getForm(type){
         <div class="fg"><label>Projeto</label><select id="f-proj" onchange="loadRubricasForPayment(this.value);setupTax()">${DB.projects.map(p=>`<option value="${p.id}">${p.name.substring(0,35)}</option>`).join('')}</select></div>
       </div>
       <div class="fg" style="margin-top:10px"><label>Rubrica</label>
-        <select id="f-rub" style="width:100%" onchange="setupTax();checkUnitHint()"></select>
+        <select id="f-rub" style="width:100%" onchange="setupTax();checkUnitHint();checkCnaeHint()"></select>
       </div>
+      <div id="cnae-hint" style="display:none;margin-top:4px;padding:7px 10px;border-radius:6px;font-size:12px;line-height:1.4"></div>
       <div class="gr c3" style="margin-top:10px">
-        <div class="fg"><label>Tipo de serviço</label><select id="f-service" onchange="setupTax()"><option value="cache_artistico">Cachê artístico</option><option value="servicos_pf">Serviços PF</option><option value="servicos_pj">Serviços PJ</option><option value="equipamento">Equipamentos</option><option value="locacao">Locação</option></select></div>
+        <div class="fg"><label>Tipo de serviço</label><select id="f-service" onchange="setupTax();checkCnaeHint()"><option value="cache_artistico">Cachê artístico</option><option value="servicos_pf">Serviços PF</option><option value="servicos_pj">Serviços PJ</option><option value="equipamento">Equipamentos</option><option value="locacao">Locação</option></select></div>
         <div class="fg"><label>Pessoa</label><select id="f-person" onchange="setupTax()"><option value="pf">Física (PF)</option><option value="pj">Jurídica (PJ)</option></select></div>
         <div class="fg"><label>Regime tributário</label><select id="f-regime" onchange="setupTax()"><option value="">—</option><option value="simples_nacional">Simples Nacional</option><option value="lucro_presumido">Lucro Presumido</option><option value="lucro_real">Lucro Real</option></select></div>
       </div>
@@ -6230,6 +6232,7 @@ function lookupVendorByDoc(raw){
       else serviceSel.value='servicos_pf';
     }
     setupTax();
+    checkCnaeHint();
   });
 }
 
@@ -6301,6 +6304,29 @@ function checkUnitHint(){
   }
 }
 
+function checkCnaeHint(){
+  const hintEl=document.getElementById('cnae-hint');
+  if(!hintEl)return;
+  const vid=parseInt(document.getElementById('f-vendor-id')?.value||0);
+  const rub=document.getElementById('f-rub')?.value||'';
+  const service=document.getElementById('f-service')?.value||'cache_artistico';
+  if(!vid||!rub){hintEl.style.display='none';return;}
+  const vendor=DB.vendors?.find(v=>v.id===vid);
+  if(!vendor){hintEl.style.display='none';return;}
+  const check=checkCNAECompatibility(vendor,service,rub);
+  hintEl.style.display='block';
+  if(check.ok===true){
+    hintEl.style.background='#d1fae5';hintEl.style.color='#065f46';hintEl.style.border='1px solid #6ee7b7';
+    hintEl.innerHTML=`<strong>✓ CNAE compatível com a rubrica</strong> — ${check.detail}`;
+  } else if(check.ok===null){
+    hintEl.style.background='#eff6ff';hintEl.style.color='#1e40af';hintEl.style.border='1px solid #93c5fd';
+    hintEl.innerHTML=`<strong>ℹ️ CNAE em verificação</strong> — ${check.detail}`;
+  } else {
+    hintEl.style.background='#fef3c7';hintEl.style.color='#78350f';hintEl.style.border='1px solid #fcd34d';
+    hintEl.innerHTML=`<strong>⚠️ CNAE possivelmente incompatível com a rubrica</strong> — ${check.detail}`;
+  }
+}
+
 function viewPayment(id){
   const p=DB.payments.find(x=>x.id===id); if(!p)return;
   const t=calcTax(p.gross,p.service,p.personType,p.taxRegime); const tot=t.iss+t.ir+t.inss+t.pis;
@@ -6313,7 +6339,8 @@ function viewPayment(id){
     <div><div style="font-size:11px;color:var(--text2)">Tipo</div>${p.personType.toUpperCase()} — ${p.service.replace(/_/g,' ')}</div>
   </div>
   ${p.board_required?`<div style="padding:10px 12px;background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;margin-bottom:10px;font-size:12px;color:#78350f"><strong>🏛 Requer autorização da Diretoria</strong><br>${p.board_required_reason||'Valor fora do unitário ou total da rubrica'}</div>`:''}
-  ${buildSemaphore(p.gross,p.service,p.personType,p.taxRegime,p.proj_id,p.rubrica,1)}
+  ${p.cnae_ok===false?`<div style="padding:10px 12px;background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;margin-bottom:10px;font-size:12px;color:#78350f"><strong>⚠️ CNAE possivelmente incompatível com a rubrica</strong><br>${p.cnae_detail||'Verifique o CNAE do fornecedor versus a rubrica contratada'}</div>`:''}
+  ${buildSemaphore(p.gross,p.service,p.personType,p.taxRegime,p.proj_id,p.rubrica,p.vendor_id||p.id)}
   <div class="tax-box" style="margin-top:10px">
     <div class="tr"><span>Valor bruto</span><span>${fmt(p.gross)}</span></div>
     ${t.iss>0?`<div class="tr"><span>(-) ISS</span><span>-${fmt(t.iss)}</span></div>`:''}
