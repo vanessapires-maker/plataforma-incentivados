@@ -1792,15 +1792,26 @@ function extractRubricasFromExcel(workbook, filename){
 
     for(let r=0;r<Math.min(rows.length,12);r++){
       const row=rows[r].map(c=>String(c).toLowerCase().trim());
-      const dIdx=row.findIndex(c=>/descri|rubric|item\b|nome/.test(c));
-      const vIdx=row.findIndex(c=>/valor\s*(total|aprovado|orçamento|orcamento)?$|aprovado|total\s*(aprovado)?|budget/.test(c));
+      const dIdx=row.findIndex(c=>/descri|rubric|item\b|nome|especif|servi[çc]|a[çc][aã]o|memorial|bem\b|produto/.test(c));
+      // Para valorCol: prioriza "valor total" / "total aprovado" sobre apenas "total"
+      const vIdx=(()=>{
+        // 1ª tentativa: coluna explicitamente de total aprovado
+        let i=row.findIndex(c=>/valor\s*(total|aprovado|or[çc]amento|orcamento)|total\s*aprovado/.test(c));
+        if(i<0) i=row.findIndex(c=>/^(total|aprovado|budget)$/.test(c));
+        if(i<0) i=row.findIndex(c=>/total|aprovado|budget/.test(c));
+        return i;
+      })();
       if(dIdx>=0&&vIdx>=0){
         descrCol=dIdx; valorCol=vIdx; headerRow=r;
-        // Colunas opcionais
+        // Colunas opcionais — regexes ampliados para cobrir variações brasileiras
         grupoCol=row.findIndex(c=>/grupo|categoria|tipo/.test(c));
-        unitCol=row.findIndex(c=>/unit[aá]rio|unit\.?|valor\s+unit/.test(c));
-        qtdCol=row.findIndex(c=>/^qtd$|quant/.test(c));
-        ocorrCol=row.findIndex(c=>/ocorr|recorr|vezes|frequ/.test(c));
+        unitCol=row.findIndex(c=>/unit[aá]rio|vl\.?\s*unit|val\.?\s*unit|valor\s*unit/.test(c));
+        qtdCol=row.findIndex(c=>/\bqtd|quant|^und\.?e?$/.test(c));
+        ocorrCol=row.findIndex(c=>/ocorr|recorr|vezes|frequ|n[°º]\s*ocorr|n[uú]m\.?\s*ocorr/.test(c));
+        // Garante que unitCol não conflita com valorCol (se apontam para mesma coluna, limpa unitCol)
+        if(unitCol>=0&&unitCol===valorCol)unitCol=-1;
+        if(qtdCol>=0&&qtdCol===valorCol)qtdCol=-1;
+        if(ocorrCol>=0&&ocorrCol===valorCol)ocorrCol=-1;
         break;
       }
     }
@@ -1817,9 +1828,17 @@ function extractRubricasFromExcel(workbook, filename){
         const qtd=qtdCol>=0?Math.max(1,Math.round(parseBR(row[qtdCol]))||1):1;
         const ocorrencias=ocorrCol>=0?Math.max(1,Math.round(parseBR(row[ocorrCol]))||1):1;
 
-        // Valor total: usa coluna de total; se não tiver e tiver unit, calcula
+        // Valor total: usa coluna de total; se não tiver, calcula de unit×qtd×ocorr; ou busca a maior célula numérica da linha
         let aprovado=parseBR(row[valorCol]);
         if(!aprovado&&unit>0) aprovado=unit*qtd*ocorrencias;
+        if(!aprovado){
+          // fallback: maior valor numérico na linha (exceto descrCol)
+          for(let c=0;c<row.length;c++){
+            if(c===descrCol||c===grupoCol)continue;
+            const v=parseBR(row[c]);
+            if(v>aprovado)aprovado=v;
+          }
+        }
         if(aprovado<10)continue;
 
         const grupo=grupoCol>=0?String(row[grupoCol]||'').trim():'';
@@ -1863,63 +1882,109 @@ function extractRubricasFromText(text){
   // Normalize text: remove extra spaces, fix common OCR artifacts
   const t=text.replace(/\s+/g,' ').replace(/R\s*\$/g,'R$').replace(/\.\s(?=\d{3})/g,'.');
 
-  // Patterns for common Brazilian incentive law document formats
+  const seen=new Set();
+  const ignoreWords=/^(total|subtotal|valor\s*total|soma|desconto|taxa|imposto|iss|ir\b|inss|pis|cofins|csll|bruto|líquido|captado|saldo|aprovado|executado|contratado|receita|despesa|resultado|orçamento\s*total)$/i;
+
+  // Helper: parse Brazilian number string ("1.234,56" → 1234.56)
+  function parseBR(s){
+    if(!s)return 0;
+    return parseFloat(String(s).replace(/\./g,'').replace(',','.'))||0;
+  }
+
+  // Helper: strip trailing "unit words" (Unidade, Serviço, Mês, etc) que ficam no nome
+  function stripUnit(s){
+    return s.trim()
+      .replace(/\s+(un(?:idades?)?|serv(?:i[çc]o)?|m[eê]s(?:es)?|hora|dia|diária|vg|vaga|kit|lote|global|item|peça|pç|m²|m³)\s*$/i,'')
+      .replace(/[\.…\s]+$/,'')
+      .replace(/^\d+[\.\-\)]\s*/,'');
+  }
+
+  // ── 1. Tentativa principal: padrão de tabela SALIC/ProAC com qtd, ocorr, unit, total
+  // Ex: "Cachê artístico 10 2 R$ 8.500,00 R$ 170.000,00"
+  // Ex: "Produção artística Unidade 1 1 450.000,00 450.000,00"
+  const tableRowPat=/([A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇ][^\d]{4,70}?)\s+(?:un(?:idades?)?\.?\s+)?(\d{1,4})\s+(\d{1,4})\s+R?\$?\s*([\d\.]+,\d{2})\s+R?\$?\s*([\d\.]+,\d{2})/g;
+  tableRowPat.lastIndex=0;
+  let m;
+  while((m=tableRowPat.exec(t))!==null){
+    const nome=stripUnit(m[1]);
+    if(!nome||nome.length<4||nome.length>80)continue;
+    if(ignoreWords.test(nome.toLowerCase()))continue;
+    const qtd=parseInt(m[2])||1;
+    const ocorr=parseInt(m[3])||1;
+    const unit=parseBR(m[4]);
+    const total=parseBR(m[5]);
+    const aprovado=total>0?total:(unit*qtd*ocorr||unit);
+    if(aprovado<10)continue;
+    if(seen.has(nome.toLowerCase()))continue;
+    seen.add(nome.toLowerCase());
+    items.push({rubrica:nome,aprovado,unit,qtd,ocorrencias:ocorr,grupo:guessGrupo(nome)});
+  }
+
+  // ── 2. Padrão SALIC com apenas qtd, unit e total (sem ocorrências explícitas)
+  if(items.length<3){
+    const twoNumPat=/([A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇ][^\d]{4,70}?)\s+(?:un(?:idades?)?\.?\s+)?(\d{1,4})\s+R?\$?\s*([\d\.]+,\d{2})\s+R?\$?\s*([\d\.]+,\d{2})/g;
+    twoNumPat.lastIndex=0;
+    while((m=twoNumPat.exec(t))!==null){
+      const nome=stripUnit(m[1]);
+      if(!nome||nome.length<4||nome.length>80)continue;
+      if(ignoreWords.test(nome.toLowerCase())||seen.has(nome.toLowerCase()))continue;
+      const qtd=parseInt(m[2])||1;
+      const unit=parseBR(m[3]);
+      const total=parseBR(m[4]);
+      const aprovado=total>0?total:(unit*qtd);
+      if(aprovado<10)continue;
+      seen.add(nome.toLowerCase());
+      items.push({rubrica:nome,aprovado,unit,qtd,ocorrencias:1,grupo:guessGrupo(nome)});
+    }
+  }
+
+  // ── 3. Padrões clássicos para documentos sem estrutura de tabela bem definida
   const patterns=[
     // "1. Produção artística ................. R$ 450.000,00"
     /(\d+[\.\d]*)\s*[–\-\.]+\s*([A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇ][^\n\r]{5,60}?)\s*\.{2,}\s*R\$\s*([\d\.]+,\d{2})/g,
     // "Rubrica: Cachês artísticos / Valor: R$ 150.000,00"
     /[Rr]ubrica[:\s]+([A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇ][^/\n\r]{4,60}?)[\s/]+[Vv]alor[:\s]+R\$\s*([\d\.]+,\d{2})/g,
-    // "PRODUÇÃO ARTÍSTICA R$ 450.000,00" (all caps header style)
+    // "PRODUÇÃO ARTÍSTICA R$ 450.000,00"
     /\b([A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇ][A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇ\s]{4,50})\s+R\$\s*([\d\.]+,\d{2})/g,
-    // "Cachês Artísticos.....150.000,00" or "150.000,00"
+    // "Cachês Artísticos.....150.000,00"
     /([A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇ][a-záéíóúâêîôûãõç\s]{4,60}?)\s*\.{2,}\s*([\d\.]+,\d{2})/g,
-    // Table line: word(s) followed by amount on same line
+    // Table line: word(s) + amount
     /^([A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇ][^\t\n\r]{4,60}?)\s{2,}([\d\.]+,\d{2})\s*$/gm,
   ];
 
-  const seen=new Set();
-  const ignoreWords=/total|subtotal|valor\s*total|soma|desconto|taxa|imposto|iss|ir\b|inss|pis|cofins|csll|bruto|líquido|captado|saldo|aprovado|executado|contratado|receita|despesa|resultado|orçamento\s*total/i;
-
-  // Helper: parse Brazilian number
-  function parseBR(s){return parseFloat(s.replace(/\./g,'').replace(',','.'))||0;}
-
-  // Try each pattern
-  for(const pat of patterns){
-    pat.lastIndex=0;
-    let m;
-    while((m=pat.exec(t))!==null){
-      let nome, valor;
-      if(m.length===4){nome=m[2].trim();valor=parseBR(m[3]);}
-      else{nome=m[1].trim();valor=parseBR(m[2]);}
-      if(!nome||valor<100)continue;
-      if(ignoreWords.test(nome))continue;
-      if(nome.length<4||nome.length>80)continue;
-      // Remove trailing dots and noise
-      nome=nome.replace(/[\.…\s]+$/, '').trim();
-      if(seen.has(nome.toLowerCase()))continue;
-      seen.add(nome.toLowerCase());
-      // Guess grupo from common categories
-      const grupo=guessGrupo(nome);
-      items.push({rubrica:nome,aprovado:valor,grupo});
+  if(items.length<3){
+    for(const pat of patterns){
+      pat.lastIndex=0;
+      while((m=pat.exec(t))!==null){
+        let nome, valor;
+        if(m.length===4){nome=m[2].trim();valor=parseBR(m[3]);}
+        else{nome=m[1].trim();valor=parseBR(m[2]);}
+        if(!nome||valor<100)continue;
+        if(ignoreWords.test(nome))continue;
+        if(nome.length<4||nome.length>80)continue;
+        nome=nome.replace(/[\.…\s]+$/,'').trim();
+        if(seen.has(nome.toLowerCase()))continue;
+        seen.add(nome.toLowerCase());
+        items.push({rubrica:nome,aprovado:valor,unit:0,qtd:1,ocorrencias:1,grupo:guessGrupo(nome)});
+      }
+      if(items.length>=3)break;
     }
-    if(items.length>=3)break; // stop at first pattern that yields results
   }
 
-  // If still nothing, try a looser pass: find money amounts preceded by text
+  // ── 4. Fallback: qualquer texto seguido de R$
   if(!items.length){
     const loose=/([A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇ][^\n\r]{5,70}?)\s+R\$\s*([\d\.]+,\d{2})/g;
     loose.lastIndex=0;
-    let m;
     while((m=loose.exec(t))!==null){
       const nome=m[1].trim().replace(/[\.…\s]+$/,'');
       const valor=parseBR(m[2]);
       if(!nome||valor<100||ignoreWords.test(nome)||seen.has(nome.toLowerCase()))continue;
       seen.add(nome.toLowerCase());
-      items.push({rubrica:nome,aprovado:valor,grupo:guessGrupo(nome)});
+      items.push({rubrica:nome,aprovado:valor,unit:0,qtd:1,ocorrencias:1,grupo:guessGrupo(nome)});
     }
   }
 
-  return items.slice(0,40); // cap at 40 items
+  return items.slice(0,40);
 }
 
 function guessGrupo(nome){
