@@ -708,6 +708,25 @@ code{font-family:monospace;font-size:10px;background:var(--bg3);padding:1px 4px;
         <button class="btn btn-sm btn-p" onclick="saveAdminConfig()" style="width:fit-content"><i class="ti ti-device-floppy"></i> Salvar configurações</button>
       </div>
     </div>
+    <!-- IA / Anthropic -->
+    <div class="sec">
+      <div class="sec-h"><span class="sec-t"><i class="ti ti-robot" style="color:var(--purple)"></i> Interpretação com IA (Anthropic Claude)</span></div>
+      <div style="padding:14px;display:grid;gap:10px">
+        <div style="font-size:11px;color:var(--text2)">
+          Informe sua chave da API Anthropic para habilitar a leitura inteligente de orçamentos (PDF/Excel). A chave fica salva apenas neste navegador e nunca é enviada para terceiros.
+          <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:var(--purple);text-decoration:none"> Criar chave →</a>
+        </div>
+        <div class="fg">
+          <label>Chave API Anthropic (sk-ant-...)</label>
+          <div style="display:flex;gap:6px">
+            <input id="cfg-anthropic-key" type="password" placeholder="sk-ant-api03-..." style="flex:1;font-family:monospace;font-size:12px">
+            <button type="button" class="btn btn-sm" onclick="document.getElementById('cfg-anthropic-key').type=document.getElementById('cfg-anthropic-key').type==='password'?'text':'password'" title="Mostrar/ocultar"><i class="ti ti-eye"></i></button>
+            <button type="button" class="btn btn-sm btn-p" onclick="saveAnthropicKey()" title="Salvar chave"><i class="ti ti-device-floppy"></i> Salvar</button>
+          </div>
+        </div>
+        <div id="cfg-anthropic-status" style="font-size:11px"></div>
+      </div>
+    </div>
     <!-- Segurança -->
     <div class="sec">
       <div class="sec-h"><span class="sec-t">Configurações de segurança</span></div>
@@ -1724,6 +1743,8 @@ async function handlePdfRubricas(input){
       const arrayBuffer=await file.arrayBuffer();
       const workbook=XLSX.read(arrayBuffer,{type:'array'});
       const items=extractRubricasFromExcel(workbook,file.name);
+      // Guarda texto bruto para IA: primeira aba como CSV
+      try{const ws=workbook.Sheets[workbook.SheetNames[0]];window._pdfRawText=XLSX.utils.sheet_to_csv(ws).substring(0,8000);}catch(e){}
       status.textContent='';
       if(!items.length){
         showToast('Nenhuma rubrica encontrada na planilha. Verifique se há colunas de descrição e valor.','var(--amber)');
@@ -1753,6 +1774,7 @@ async function handlePdfRubricas(input){
       fullText+=content.items.map(it=>it.str).join(' ')+'\n';
     }
     status.textContent='⏳ Extraindo rubricas...';
+    window._pdfRawText=fullText; // guarda para reprocessamento com IA
     const items=extractRubricasFromText(fullText);
     if(!items.length){
       status.textContent='';
@@ -2064,11 +2086,16 @@ function showPdfPreviewModal(items){
       </table>
       </div>
     </div>
-    <div class="mf" style="justify-content:space-between">
+    <div class="mf" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
       <button class="btn btn-sm" onclick="closePdfPreview()">Cancelar</button>
-      <button class="btn btn-sm btn-p" onclick="confirmPdfImport()">
-        <i class="ti ti-check"></i> Importar ${window.pdfItems.length} rubricas
-      </button>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button class="btn btn-sm" id="btn-ai-interpret" onclick="interpretRubricasWithAI()" style="background:linear-gradient(135deg,#6c47ff,#9d6bff);color:#fff;border:none" title="Usar Claude IA para interpretar o documento e preencher os campos automaticamente">
+          <i class="ti ti-robot"></i> Interpretar com IA
+        </button>
+        <button class="btn btn-sm btn-p" onclick="confirmPdfImport()">
+          <i class="ti ti-check"></i> Importar ${window.pdfItems.length} rubricas
+        </button>
+      </div>
     </div>
   </div></div>`;
 
@@ -2095,10 +2122,15 @@ function showPdfRawModal(text){
   <div class="modal" style="width:640px;max-width:95vw">
     <div class="mh"><h3><i class="ti ti-file-text"></i> Texto extraído do PDF</h3><button class="btn btn-sm" onclick="closePdfPreview()"><i class="ti ti-x"></i></button></div>
     <div class="mb">
-      <div class="alert al-w"><i class="ti ti-alert-triangle"></i> Não consegui identificar rubricas automaticamente. Veja abaixo o texto lido do PDF. O documento pode ter um formato diferente ou ser um PDF de imagem (escaneado).</div>
-      <pre style="font-size:11px;background:var(--bg2);padding:12px;border-radius:6px;overflow:auto;max-height:300px;white-space:pre-wrap">${preview.replace(/</g,'&lt;')}${text.length>2000?'\n…(truncado)':''}</pre>
+      <div class="alert al-w" style="margin-bottom:10px"><i class="ti ti-alert-triangle"></i> Não consegui identificar rubricas automaticamente. Veja o texto extraído abaixo — use <strong>Interpretar com IA</strong> para que o Claude analise o documento e preencha os campos corretos.</div>
+      <pre style="font-size:11px;background:var(--bg2);padding:12px;border-radius:6px;overflow:auto;max-height:260px;white-space:pre-wrap">${preview.replace(/</g,'&lt;')}${text.length>2000?'\n…(truncado)':''}</pre>
     </div>
-    <div class="mf"><button class="btn btn-sm btn-p" onclick="closePdfPreview()">Fechar</button></div>
+    <div class="mf" style="justify-content:space-between">
+      <button class="btn btn-sm" onclick="closePdfPreview()">Fechar</button>
+      <button class="btn btn-sm" onclick="closePdfPreview();interpretRubricasWithAI()" style="background:linear-gradient(135deg,#6c47ff,#9d6bff);color:#fff;border:none">
+        <i class="ti ti-robot"></i> Interpretar com IA
+      </button>
+    </div>
   </div></div>`;
   const wrap=document.createElement('div');
   wrap.id='pdf-modal-wrap';
@@ -2109,6 +2141,140 @@ function showPdfRawModal(text){
 function closePdfPreview(){
   const el=document.getElementById('pdf-modal-wrap');
   if(el)el.remove();
+}
+
+// ── ANTHROPIC API KEY ─────────────────────────────────────────────────────────
+function saveAnthropicKey(){
+  const key=(document.getElementById('cfg-anthropic-key')?.value||'').trim();
+  if(!key){showToast('Informe a chave API','var(--amber)');return;}
+  if(!key.startsWith('sk-ant-')){showToast('Chave inválida — deve começar com sk-ant-','var(--red)');return;}
+  localStorage.setItem('anthropic_api_key',key);
+  const st=document.getElementById('cfg-anthropic-status');
+  if(st)st.innerHTML='<span style="color:var(--teal)"><i class="ti ti-check"></i> Chave salva — IA disponível para importação de rubricas</span>';
+  showToast('Chave API salva!','ok');
+}
+function getAnthropicKey(){return localStorage.getItem('anthropic_api_key')||'';}
+function loadAnthropicKeyField(){
+  const k=getAnthropicKey();
+  const el=document.getElementById('cfg-anthropic-key');
+  if(el&&k)el.value=k;
+  const st=document.getElementById('cfg-anthropic-status');
+  if(st)st.innerHTML=k?'<span style="color:var(--teal)"><i class="ti ti-check"></i> Chave configurada — IA disponível</span>':'<span style="color:var(--text2)">Chave não configurada</span>';
+}
+
+// ── INTERPRETAR RUBRICAS COM IA ───────────────────────────────────────────────
+async function interpretRubricasWithAI(){
+  const apiKey=getAnthropicKey();
+  if(!apiKey){
+    showToast('Configure a chave API Anthropic em Admin → IA antes de usar esta função.','var(--amber)',5000);
+    navigate('admin');
+    return;
+  }
+  const rawText=window._pdfRawText||'';
+  if(!rawText){showToast('Nenhum texto disponível para interpretar. Importe o arquivo novamente.','var(--amber)');return;}
+
+  const btn=document.getElementById('btn-ai-interpret');
+  const origHtml=btn?.innerHTML||'';
+  if(btn){btn.disabled=true;btn.innerHTML='<i class="ti ti-loader-2"></i> Interpretando...';}
+
+  // Limita texto a 6000 chars para evitar tokens excessivos
+  const textSlice=rawText.replace(/\s+/g,' ').substring(0,6000);
+
+  const prompt=`Você é especialista em leis de incentivo cultural e esportivo do Brasil (Lei Rouanet, ProAC, Paulo Gustavo, Aldir Blanc, Lei do Esporte, etc.).
+
+Analise o texto abaixo, extraído de um orçamento/plano de trabalho de projeto cultural, e identifique cada RUBRICA ORÇAMENTÁRIA com os seguintes campos:
+- "rubrica": nome completo da rubrica/item (string)
+- "grupo": categoria — use exatamente uma dessas: Artístico, Produção, Técnico, Comunicação, Administração, Logística, Infraestrutura, Materiais, Impostos, Geral
+- "unit": valor unitário em reais (número decimal, 0 se não informado)
+- "qtd": quantidade/número de itens (inteiro, mínimo 1)
+- "ocorrencias": número de ocorrências/repetições/apresentações (inteiro, mínimo 1)
+- "aprovado": valor total aprovado (número decimal = unit × qtd × ocorrencias; se não calculável, use o valor total informado)
+
+Regras:
+- NÃO inclua linhas de totais, subtotais, impostos acumulados, saldos, cabeçalhos
+- Se unit for 0 mas houver valor total, coloque-o em "aprovado" diretamente
+- Retorne APENAS um array JSON válido, sem texto explicativo antes ou depois
+
+Texto do documento:
+${textSlice}
+
+Resposta (apenas o JSON):`;
+
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{
+        'x-api-key':apiKey,
+        'anthropic-version':'2023-06-01',
+        'content-type':'application/json',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body:JSON.stringify({
+        model:'claude-haiku-4-5-20251001',
+        max_tokens:2048,
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+
+    if(!resp.ok){
+      const err=await resp.json().catch(()=>({}));
+      throw new Error(err.error?.message||`HTTP ${resp.status}`);
+    }
+
+    const data=await resp.json();
+    const content=data.content?.[0]?.text||'';
+
+    // Extrai JSON do response (pode ter markdown code block)
+    const jsonMatch=content.match(/\[[\s\S]*\]/);
+    if(!jsonMatch)throw new Error('IA não retornou JSON válido. Tente novamente.');
+    const parsed=JSON.parse(jsonMatch[0]);
+    if(!Array.isArray(parsed)||!parsed.length)throw new Error('Nenhuma rubrica identificada pela IA.');
+
+    // Atualiza pdfItems com resultado da IA
+    window.pdfItems=parsed.map(it=>({
+      rubrica:(it.rubrica||it.nome||'').trim(),
+      grupo:it.grupo||guessGrupo(it.rubrica||''),
+      unit:parseFloat(it.unit)||0,
+      qtd:Math.max(1,parseInt(it.qtd)||1),
+      ocorrencias:Math.max(1,parseInt(it.ocorrencias)||1),
+      aprovado:parseFloat(it.aprovado)||0
+    })).filter(it=>it.rubrica&&it.aprovado>0);
+
+    if(!window.pdfItems.length)throw new Error('Nenhuma rubrica com valor válido retornada pela IA.');
+
+    // Re-renderiza tabela
+    renderPdfPreviewRows();
+    const totalAp=window.pdfItems.reduce((s,i)=>s+(i.aprovado||0),0);
+    showToast(`✓ IA identificou ${window.pdfItems.length} rubricas — total R$ ${fmt(totalAp)}`,'ok',5000);
+
+  }catch(e){
+    showToast('Erro na interpretação com IA: '+e.message,'var(--red)',6000);
+  }finally{
+    if(btn){btn.disabled=false;btn.innerHTML=origHtml||'<i class="ti ti-robot"></i> Interpretar com IA';}
+  }
+}
+
+function renderPdfPreviewRows(){
+  const tbody=document.getElementById('pdf-items-tbody');
+  if(!tbody)return;
+  function inpStyle(w){return`style="padding:4px 6px;border:.5px solid var(--border2);border-radius:var(--r);font-size:12px;width:${w};font-family:inherit;background:var(--bg);color:var(--text)"`;}
+  function selStyle(){return`style="padding:4px 6px;border:.5px solid var(--border2);border-radius:var(--r);font-size:11px;font-family:inherit;background:var(--bg);color:var(--text)"`;}
+  const gruposOpts=(sel)=>['Artístico','Produção','Técnico','Comunicação','Administração','Logística','Infraestrutura','Materiais','Geral','Cachê','Impostos']
+    .map(g=>`<option${g===sel?' selected':''}>${g}</option>`).join('');
+  tbody.innerHTML=(window.pdfItems||[]).map((it,idx)=>it?`
+  <tr id="pdf-row-${idx}" style="vertical-align:middle">
+    <td><input ${inpStyle('100%')} value="${(it.rubrica||'').replace(/"/g,'&quot;')}" oninput="pdfItems[${idx}].rubrica=this.value"></td>
+    <td><select ${selStyle()} onchange="pdfItems[${idx}].grupo=this.value">${gruposOpts(it.grupo)}</select></td>
+    <td><input type="number" min="0" step="0.01" ${inpStyle('100px')} value="${it.unit||''}" placeholder="0,00" oninput="pdfItems[${idx}].unit=parseFloat(this.value)||0;pdfCalcTotal(${idx})"></td>
+    <td><input type="number" min="1" step="1" ${inpStyle('52px')} value="${it.qtd||1}" oninput="pdfItems[${idx}].qtd=parseInt(this.value)||1;pdfCalcTotal(${idx})"></td>
+    <td><input type="number" min="1" step="1" ${inpStyle('52px')} value="${it.ocorrencias||1}" oninput="pdfItems[${idx}].ocorrencias=parseInt(this.value)||1;pdfCalcTotal(${idx})"></td>
+    <td><input type="number" min="0" step="0.01" ${inpStyle('110px')} id="pdf-total-${idx}" value="${(it.aprovado||0).toFixed(2)}" style="font-weight:600;color:var(--purple);padding:4px 6px;border:.5px solid var(--border2);border-radius:var(--r);font-size:12px;width:110px;font-family:inherit;background:var(--bg2)" oninput="pdfItems[${idx}].aprovado=parseFloat(this.value)||0"></td>
+    <td><button class="btn btn-sm btn-no" onclick="removePdfItem(${idx})" title="Remover"><i class="ti ti-trash"></i></button></td>
+  </tr>`:'').join('');
+  // Atualiza contador no botão de importar
+  const importBtn=document.querySelector('#pdf-preview-modal .btn-p');
+  const validCount=(window.pdfItems||[]).filter(Boolean).length;
+  if(importBtn&&importBtn.textContent.includes('Importar'))importBtn.innerHTML=`<i class="ti ti-check"></i> Importar ${validCount} rubricas`;
 }
 
 function removePdfItem(idx){
@@ -7158,7 +7324,8 @@ function importContasReceber(input){
 
 const TITLES={dashboard:'Dashboard',projects:'Projetos',rubricas:'Rubricas — Orçamento vs. Executado',payments:'Solicitações de Pagamento',approvals:'Aprovações Pendentes','contas-pagar':'Contas a Pagar','contas-receber':'Contas a Receber',nf:'Notas Fiscais e Guias',omie:'Omie — Integração e Sincronização',vendors:'Fornecedores',contracts:'Contratos Digitais (Clicksign)',ai:'Assistente IA — Leis de Incentivo',laws:'Base Legislativa',docs:'Repositório de Documentos',accountability:'Prestação de Contas',reports:'Relatórios',audit:'Auditoria Imutável',admin:'Administração'};
 const NEW_PAGES=['projects','payments','vendors','contracts','contas-pagar','contas-receber'];
-const RENDERS={dashboard:renderDashboard,projects:renderProjects,rubricas:renderRubricas,payments:renderPayments,approvals:renderApprovals,'contas-pagar':renderContasPagar,'contas-receber':renderContasReceber,nf:renderNF,omie:renderOmie,vendors:renderVendors,contracts:renderContracts,ai:renderAI,laws:renderLaws,docs:renderDocs,accountability:renderAccountability,audit:renderAudit,admin:renderUsers};
+function renderAdmin(){renderUsers();loadAnthropicKeyField();}
+const RENDERS={dashboard:renderDashboard,projects:renderProjects,rubricas:renderRubricas,payments:renderPayments,approvals:renderApprovals,'contas-pagar':renderContasPagar,'contas-receber':renderContasReceber,nf:renderNF,omie:renderOmie,vendors:renderVendors,contracts:renderContracts,ai:renderAI,laws:renderLaws,docs:renderDocs,accountability:renderAccountability,audit:renderAudit,admin:renderAdmin};
 
 function navigate(page){
   document.querySelectorAll('.page').forEach(p=>{p.classList.remove('active');p.style.display='';});
@@ -7190,6 +7357,7 @@ async function doLogin(){
   renderContasPagar();renderContasReceber();
   renderNF();renderOmie();renderVendors();renderContracts();
   renderAI();renderLaws();renderDocs();renderAccountability();renderAudit();renderUsers();
+  loadAnthropicKeyField();
   navigate('dashboard');
 }
 
