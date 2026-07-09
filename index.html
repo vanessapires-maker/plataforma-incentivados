@@ -8543,16 +8543,16 @@ function renderProjPrestacao(proj) {
     <div style="padding:14px">
       <textarea id="prest-preview" class="fg" rows="22" style="width:100%;font-family:monospace;font-size:11px;resize:vertical;line-height:1.5">${relatorio.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
       <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-        <button class="btn btn-sm btn-p" onclick="showToast('Em breve: exportar PDF da prestação de contas')">
+        <button class="btn btn-sm btn-p" onclick="exportRelatorioPC_PDF(${proj.id})">
           <i class="ti ti-file-type-pdf"></i> Exportar PDF
         </button>
-        <button class="btn btn-sm" onclick="showToast('Em breve: exportar DOCX')">
-          <i class="ti ti-file-type-doc"></i> Exportar DOCX
+        <button class="btn btn-sm" onclick="exportRelatorioPC_TXT(${proj.id})">
+          <i class="ti ti-file-download"></i> Baixar .txt
         </button>
-        <button class="btn btn-sm" onclick="const ta=document.getElementById('prest-preview');if(ta)navigator.clipboard?.writeText(ta.value).then(()=>showToast('Copiado!','var(--teal)'))">
+        <button class="btn btn-sm" onclick="copiarRelatorioPC()">
           <i class="ti ti-copy"></i> Copiar tudo
         </button>
-        ${info?.sistema?`<a href="https://${info.sistema.replace(/.*\(/,'').replace(/\).*/,'')}" target="_blank" class="btn btn-sm" style="text-decoration:none">
+        ${info?.sistema?`<a href="https://${info.sistema.replace(/.*\(\s*/,'').replace(/\s*\).*/,'')}" target="_blank" class="btn btn-sm" style="text-decoration:none">
           <i class="ti ti-external-link"></i> Abrir ${info.sistema.split(' ')[0]}
         </a>`:''}
       </div>
@@ -8566,15 +8566,82 @@ function togglePrestacaoItem(projId, itemId, checked){
   if(!DB.prestacao_status[projId]) DB.prestacao_status[projId]={};
   DB.prestacao_status[projId][itemId]=checked;
   saveDB();
-  // Atualiza apenas os contadores sem re-render completo
-  renderProjectTabContent();
+  // Atualiza apenas o visual do item clicado sem re-renderizar a aba toda
+  const lbl=document.querySelector(`input[onchange*="'${itemId}'"]`)?.closest('label');
+  if(lbl){
+    const span=lbl.querySelectorAll('span')[0];
+    const badge=lbl.querySelectorAll('span')[1];
+    if(span){span.style.textDecoration=checked?'line-through':'none';span.style.color=checked?'var(--text2)':'var(--text)';}
+    if(badge){badge.textContent=checked?'✓':'pendente';badge.className=`st ${checked?'sg':'sr'}`;badge.style.fontSize='9px';}
+  }
+  // Atualiza contadores de progresso
+  const proj=DB.projects.find(p=>p.id===projId);
+  if(proj){
+    const ps=DB.prestacao_status[projId]||{};
+    const info=PRESTACAO_INFO[proj.law]||{};
+    const allDocs=info.docs||[];const allFisc=info.fiscal||[];
+    const chkD=allDocs.filter(d=>ps[d.id]).length;
+    const chkF=allFisc.filter(f=>ps[f.id]).length;
+    const tot=allDocs.length+allFisc.length;
+    const pct=tot>0?Math.round((chkD+chkF)/tot*100):0;
+    const pctColor=pct>=100?'var(--teal)':pct>=60?'var(--amber)':'var(--red)';
+    document.querySelectorAll('.mc-val').forEach(el=>{
+      if(el.textContent.includes('%')&&el.closest('.metrics'))el.textContent=`${pct}%`,el.style.color=pctColor;
+    });
+  }
 }
 
 function atualizarRelatorioPC(projId){
   const proj=DB.projects.find(p=>p.id===projId);
   if(!proj)return;
   const ta=document.getElementById('prest-preview');
-  if(ta){ta.value=gerarRelatorioPC(proj);showToast('Relatório atualizado','var(--teal)');}
+  if(ta){ta.value=gerarRelatorioPC(proj);showToast('Relatório atualizado!','var(--teal)');}
+}
+
+function copiarRelatorioPC(){
+  const ta=document.getElementById('prest-preview');
+  if(!ta)return;
+  if(navigator.clipboard?.writeText){
+    navigator.clipboard.writeText(ta.value).then(()=>showToast('Relatório copiado!','var(--teal)')).catch(()=>{ta.select();document.execCommand('copy');showToast('Copiado!','var(--teal)');});
+  } else {
+    ta.select();document.execCommand('copy');showToast('Copiado!','var(--teal)');
+  }
+}
+
+function exportRelatorioPC_PDF(projId){
+  const ta=document.getElementById('prest-preview');
+  if(!ta){showToast('Atualize o relatório primeiro','var(--amber)');return;}
+  const proj=DB.projects.find(p=>p.id===projId)||{};
+  const content=ta.value
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const win=window.open('','_blank','width=900,height=800');
+  win.document.write(`<!DOCTYPE html><html lang="pt-BR"><head>
+    <meta charset="UTF-8">
+    <title>Prestação de Contas — ${proj.name||'Projeto'}</title>
+    <style>
+      body{font-family:'Courier New',monospace;font-size:10.5px;line-height:1.6;padding:30px 40px;color:#111;white-space:pre-wrap;word-wrap:break-word}
+      h1{font-family:sans-serif;font-size:14px;color:#444;margin:0 0 16px}
+      @media print{body{padding:10mm 15mm}button{display:none}}
+    </style>
+  </head><body>
+    <button onclick="window.print()" style="font-family:sans-serif;font-size:12px;padding:6px 16px;background:#7c3aed;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-bottom:16px">🖨️ Imprimir / Salvar como PDF</button>
+    ${content}
+  </body></html>`);
+  win.document.close();
+}
+
+function exportRelatorioPC_TXT(projId){
+  const ta=document.getElementById('prest-preview');
+  if(!ta){showToast('Atualize o relatório primeiro','var(--amber)');return;}
+  const proj=DB.projects.find(p=>p.id===projId)||{};
+  const nomeSanitizado=(proj.name||'prestacao').replace(/[^a-zA-Z0-9]/g,'-').toLowerCase();
+  const blob=new Blob([ta.value],{type:'text/plain;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`relatorio-pc-${nomeSanitizado}.txt`;
+  document.body.appendChild(a);a.click();
+  setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},1000);
+  showToast('Download iniciado!','var(--teal)');
 }
 
 // ── End Project Detail View ──────────────────────────────────────────
