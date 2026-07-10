@@ -1744,10 +1744,12 @@ async function handlePdfRubricas(input){
       const workbook=XLSX.read(arrayBuffer,{type:'array'});
       const items=extractRubricasFromExcel(workbook,file.name);
       // Guarda texto bruto para IA: primeira aba como CSV
-      try{const ws=workbook.Sheets[workbook.SheetNames[0]];window._pdfRawText=XLSX.utils.sheet_to_csv(ws).substring(0,8000);}catch(e){}
+      let rawCsv='';
+      try{const ws=workbook.Sheets[workbook.SheetNames[0]];rawCsv=XLSX.utils.sheet_to_csv(ws).substring(0,12000);window._pdfRawText=rawCsv;}catch(e){}
       status.textContent='';
       if(!items.length){
-        showToast('Nenhuma rubrica encontrada na planilha. Verifique se há colunas de descrição e valor.','var(--amber)');
+        showToast('Colunas não reconhecidas automaticamente. Abrindo visualização para ajuste manual.','var(--amber)',5000);
+        showPdfRawModal(rawCsv||'(planilha vazia)');
         return;
       }
       showPdfPreviewModal(items);
@@ -1793,96 +1795,112 @@ async function handlePdfRubricas(input){
 function extractRubricasFromExcel(workbook, filename){
   const items=[];
   const seen=new Set();
-  const ignoreWords=/^(total|subtotal|soma|desconto|taxa|imposto|iss|ir|inss|pis|cofins|csll|bruto|líquido|captado|saldo|aprovado|executado|contratado|receita|despesa|resultado|orçamento total|rubrica|descrição|valor|item|grupo|categoria)$/i;
+  const ignoreWords=/^(total|subtotal|soma|desconto|taxa|imposto|iss|ir|inss|pis|cofins|csll|bruto|l[íi]quido|captado|saldo|aprovado|executado|contratado|receita|despesa|resultado|or[çc]amento\s*total|rubrica|descri[çc][aã]o|valor|item|grupo|categoria|n[°º]|n[uú]mero|código|codigo|und|unid|unidade)$/i;
 
   function parseBR(v){
     if(typeof v==='number')return v;
     if(!v)return 0;
-    const s=String(v).replace(/[^\d,\.]/g,'').replace(/\.(?=\d{3})/g,'').replace(',','.');
+    // Remove R$, espaços, pontos de milhar; substitui vírgula decimal
+    const s=String(v).replace(/R\$\s*/gi,'').replace(/\s/g,'').replace(/\.(?=\d{3}(?:[,\.]|$))/g,'').replace(',','.');
     return parseFloat(s)||0;
   }
 
+  // Regex de colunas — ampliadas para cobrir SALIC, ProAC, Rouanet, planilhas estaduais
+  const RX={
+    descr:/descri|rubric|especif|bem\s*(ou\s*serv)?|servi[çc]|a[çc][aã]o|memorial|produto|objeto|item\b|nome\b/,
+    valor:/valor\s*(total|aprovado|or[çc]|bruto)|total\s*(aprovado|geral|or[çc])|vl\.?\s*total|val\.?\s*total|^total$|^aprovado$/,
+    unit:/valor\s*unit|vl\.?\s*unit|val\.?\s*unit|unit[aá]rio|pre[çc]o\s*unit|custo\s*unit/,
+    qtd:/\bqtd|\bqte\b|quant|n[°º]?\s*de\s*item|^n[°º]$|un(id(ade)?)?\.?\s*$/,
+    ocorr:/ocorr|recorr|n[°º]\s*ocorr|n[uú]m\.?\s*ocorr|vezes|m[eê]s|frequ|repeti/,
+    grupo:/grupo|categoria|tipo\b|classif/
+  };
+
   for(const sheetName of workbook.SheetNames){
     const sheet=workbook.Sheets[sheetName];
-    const rows=XLSX.utils.sheet_to_json(sheet,{header:1,defval:''});
+    // raw:true para preservar números como números, não strings
+    const rows=XLSX.utils.sheet_to_json(sheet,{header:1,defval:'',raw:true});
     if(!rows.length)continue;
 
-    // Detectar linha de cabeçalho — procura linha com coluna de descrição + valor
     let descrCol=-1, valorCol=-1, grupoCol=-1;
     let unitCol=-1, qtdCol=-1, ocorrCol=-1;
     let headerRow=-1;
 
-    for(let r=0;r<Math.min(rows.length,12);r++){
-      const row=rows[r].map(c=>String(c).toLowerCase().trim());
-      const dIdx=row.findIndex(c=>/descri|rubric|item\b|nome|especif|servi[çc]|a[çc][aã]o|memorial|bem\b|produto/.test(c));
-      // Para valorCol: prioriza "valor total" / "total aprovado" sobre apenas "total"
+    // Busca cabeçalho nas primeiras 20 linhas
+    for(let r=0;r<Math.min(rows.length,20);r++){
+      const row=rows[r].map(c=>String(c==null?'':c).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim());
+      // Normaliza: remove acentos para comparação
+      const norm=s=>s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();
+      const dIdx=row.findIndex(c=>RX.descr.test(c));
       const vIdx=(()=>{
-        // 1ª tentativa: coluna explicitamente de total aprovado
-        let i=row.findIndex(c=>/valor\s*(total|aprovado|or[çc]amento|orcamento)|total\s*aprovado/.test(c));
-        if(i<0) i=row.findIndex(c=>/^(total|aprovado|budget)$/.test(c));
-        if(i<0) i=row.findIndex(c=>/total|aprovado|budget/.test(c));
+        // Prioridade decrescente: valor total explícito → total → aprovado → última coluna numérica relevante
+        let i=row.findIndex(c=>RX.valor.test(c));
+        if(i<0){
+          // procura qualquer célula com "total" mas evita "subtotal"
+          i=row.findIndex(c=>/\btotal\b/.test(c)&&!/sub/.test(c));
+        }
         return i;
       })();
-      if(dIdx>=0&&vIdx>=0){
+      if(dIdx>=0&&vIdx>=0&&dIdx!==vIdx){
         descrCol=dIdx; valorCol=vIdx; headerRow=r;
-        // Colunas opcionais — regexes ampliados para cobrir variações brasileiras
-        grupoCol=row.findIndex(c=>/grupo|categoria|tipo/.test(c));
-        unitCol=row.findIndex(c=>/unit[aá]rio|vl\.?\s*unit|val\.?\s*unit|valor\s*unit/.test(c));
-        qtdCol=row.findIndex(c=>/\bqtd|quant|^und\.?e?$/.test(c));
-        ocorrCol=row.findIndex(c=>/ocorr|recorr|vezes|frequ|n[°º]\s*ocorr|n[uú]m\.?\s*ocorr/.test(c));
-        // Garante que unitCol não conflita com valorCol (se apontam para mesma coluna, limpa unitCol)
-        if(unitCol>=0&&unitCol===valorCol)unitCol=-1;
-        if(qtdCol>=0&&qtdCol===valorCol)qtdCol=-1;
-        if(ocorrCol>=0&&ocorrCol===valorCol)ocorrCol=-1;
+        grupoCol=row.findIndex(c=>RX.grupo.test(c));
+        unitCol=row.findIndex(c=>RX.unit.test(c));
+        // qtdCol: ignora se coincide com descrCol
+        qtdCol=row.findIndex((c,i)=>i!==descrCol&&RX.qtd.test(c));
+        ocorrCol=row.findIndex(c=>RX.ocorr.test(c));
+        // Resolve conflitos com valorCol
+        if(unitCol===valorCol)unitCol=-1;
+        if(qtdCol===valorCol)qtdCol=-1;
+        if(ocorrCol===valorCol)ocorrCol=-1;
+        if(qtdCol===descrCol)qtdCol=-1;
         break;
       }
     }
 
     if(descrCol>=0&&valorCol>=0){
-      // Planilha estruturada
+      // === Planilha estruturada (cabeçalho encontrado) ===
       for(let r=headerRow+1;r<rows.length;r++){
         const row=rows[r];
-        const nome=String(row[descrCol]||'').trim().replace(/^\d+[\.\-\)]\s*/,'');
+        let nome=String(row[descrCol]==null?'':row[descrCol]).trim();
+        // Remove numeração inicial: "1.", "1)", "01 -"
+        nome=nome.replace(/^\d+[\.\-\)\s]+/,'').trim();
         if(!nome||nome.length<3)continue;
-        if(ignoreWords.test(nome.toLowerCase())||seen.has(nome.toLowerCase()))continue;
+        if(ignoreWords.test(nome)||seen.has(nome.toLowerCase()))continue;
+        // Ignora linhas que são cabeçalhos repetidos
+        if(RX.descr.test(nome.toLowerCase()))continue;
 
         const unit=unitCol>=0?parseBR(row[unitCol]):0;
         const qtd=qtdCol>=0?Math.max(1,Math.round(parseBR(row[qtdCol]))||1):1;
         const ocorrencias=ocorrCol>=0?Math.max(1,Math.round(parseBR(row[ocorrCol]))||1):1;
 
-        // Valor total: usa coluna de total; se não tiver, calcula de unit×qtd×ocorr; ou busca a maior célula numérica da linha
         let aprovado=parseBR(row[valorCol]);
+        // Se total zerado mas temos unit, calcula
         if(!aprovado&&unit>0) aprovado=unit*qtd*ocorrencias;
+        // Fallback: maior número da linha
         if(!aprovado){
-          // fallback: maior valor numérico na linha (exceto descrCol)
           for(let c=0;c<row.length;c++){
             if(c===descrCol||c===grupoCol)continue;
             const v=parseBR(row[c]);
             if(v>aprovado)aprovado=v;
           }
         }
-        if(aprovado<10)continue;
+        if(aprovado<1)continue; // aceita valores menores (ex: itens de R$50)
 
         const grupo=grupoCol>=0?String(row[grupoCol]||'').trim():'';
         seen.add(nome.toLowerCase());
-        items.push({
-          rubrica:nome,
-          grupo:grupo||guessGrupo(nome),
-          unit,qtd,ocorrencias,
-          aprovado
-        });
+        items.push({rubrica:nome,grupo:grupo||guessGrupo(nome),unit,qtd,ocorrencias,aprovado});
       }
     } else {
-      // Planilha não estruturada: varrer pares texto+número
+      // === Planilha não estruturada: busca pares (texto longo → número próximo) ===
       for(let r=0;r<rows.length;r++){
         const row=rows[r];
         for(let c=0;c<row.length;c++){
           const cell=row[c];
-          if(typeof cell==='string'&&cell.length>4&&!ignoreWords.test(cell.trim().toLowerCase())){
-            for(let nc=c+1;nc<Math.min(c+6,row.length);nc++){
+          if(typeof cell==='string'&&cell.trim().length>5&&!ignoreWords.test(cell.trim())){
+            // Procura número nas próximas 8 colunas
+            for(let nc=c+1;nc<Math.min(c+9,row.length);nc++){
               const val=parseBR(row[nc]);
-              if(val>=10){
-                const nome=cell.trim().replace(/^\d+[\.\-\)]\s*/,'');
+              if(val>=1){
+                const nome=cell.trim().replace(/^\d+[\.\-\)\s]+/,'');
                 if(!seen.has(nome.toLowerCase())&&nome.length>4){
                   seen.add(nome.toLowerCase());
                   items.push({rubrica:nome,grupo:guessGrupo(nome),unit:0,qtd:1,ocorrencias:1,aprovado:val});
@@ -1894,9 +1912,9 @@ function extractRubricasFromExcel(workbook, filename){
         }
       }
     }
-    if(items.length>=3)break;
+    if(items.length>=3)break; // encontrou numa aba, não precisa das outras
   }
-  return items.slice(0,60);
+  return items.slice(0,80);
 }
 
 function extractRubricasFromText(text){
