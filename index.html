@@ -1807,7 +1807,7 @@ function extractRubricasFromExcel(workbook, filename){
 
   // Regex de colunas — ampliadas para cobrir SALIC, ProAC, Rouanet, planilhas estaduais
   const RX={
-    descr:/descri|rubric|especif|bem\s*(ou\s*serv)?|servi[çc]|a[çc][aã]o|memorial|produto|objeto|item\b|nome\b/,
+    descr:/descri|rubric|especif|detalh|acoe|acao|bem\s*(ou\s*serv)?|servi[çc]|a[çc][aã]o|memorial|produto|objeto|item\b|nome\b/,
     valor:/valor\s*(total|aprovado|or[çc]|bruto)|total\s*(aprovado|geral|or[çc])|vl\.?\s*total|val\.?\s*total|^total$|^aprovado$/,
     unit:/valor\s*unit|vl\.?\s*unit|val\.?\s*unit|unit[aá]rio|pre[çc]o\s*unit|custo\s*unit/,
     qtd:/\bqtd|\bqte\b|quant|n[°º]?\s*de\s*item|^n[°º]$|un(id(ade)?)?\.?\s*$/,
